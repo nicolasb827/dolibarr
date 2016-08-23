@@ -299,6 +299,10 @@ class Facture extends CommonInvoice
 			// Clean parameters
 			if (! $this->type) $this->type = self::TYPE_STANDARD;
 			$this->ref_client=trim($this->ref_client);
+			if (empty($this->ref_client)) {
+				// if no ref set, use the one in _facrec->ref
+				$this->ref_client = trim($_facrec->ref);
+			}
 			$this->note_public=trim($this->note_public);
 			$this->note_private=trim($this->note_private);
 		    $this->note_private=dol_concatdesc($this->note_private, $langs->trans("GeneratedFromRecurringInvoice", $_facrec->ref));
