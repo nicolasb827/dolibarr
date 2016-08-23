@@ -2423,7 +2423,7 @@ class ContratLigne extends CommonObjectLine
 		$sql.= " p.ref as product_ref,";
 		$sql.= " p.label as product_label,";
 		$sql.= " p.description as product_desc,";
-		$sql.= " p.type as product_type,";
+		//$sql.= " p.type as product_type,";
 		$sql.= " t.description,";
 		$sql.= " t.date_commande,";
 		$sql.= " t.date_ouverture_prevue as date_ouverture_prevue,";
@@ -2474,7 +2474,7 @@ class ContratLigne extends CommonObjectLine
 				$this->product_ref = $obj->product_ref;
 				$this->product_label = $obj->product_label;
 				$this->product_description = $obj->product_description;
-				$this->product_type = $obj->product_type;
+				//$this->product_type = $obj->product_type;
 				$this->label = $obj->label;					// deprecated. We do not use this field. Only ref and label of product, and description of contract line
 				$this->description = $obj->description;
 				$this->date_commande = $this->db->jdate($obj->date_commande);
@@ -2626,7 +2626,7 @@ class ContratLigne extends CommonObjectLine
 		$sql.= " fk_product_fournisseur_price=".(!empty($this->fk_fournprice)?$this->fk_fournprice:"NULL").",";
 		$sql.= " buy_price_ht='".price2num($this->pa_ht)."',";
 		$sql.= " info_bits='".$this->info_bits."',";
-		$sql.= " fk_user_author=".($this->fk_user_author >= 0?$this->fk_user_author:"NULL").",";
+		$sql.= " fk_user_author=".(!empty($this->fk_user_author)?$this->fk_user_author:"NULL").",";
 		$sql.= " fk_user_ouverture=".($this->fk_user_ouverture > 0?$this->fk_user_ouverture:"NULL").",";
 		$sql.= " fk_user_cloture=".($this->fk_user_cloture > 0?$this->fk_user_cloture:"NULL").",";
 		$sql.= " commentaire='".$this->db->escape($this->commentaire)."'";
