@@ -40,8 +40,9 @@ if (! $res) die("Include of master.inc.php fails");
 
 // librarie jobs
 dol_include_once("/cron/class/cronjob.class.php");
+dol_include_once("/societe/class/societe.class.php");
 
-global $langs, $conf;
+global $langs, $conf, $mysoc;
 
 // Language Management
 $langs->load("admin");
@@ -93,6 +94,13 @@ else
 	}
 }
 $id = GETPOST('id','alpha');	// We accept non numeric id. We will filter later.
+
+
+if (! is_object($mysoc))        // mysoc may be not defined (during migration process)
+{
+	$mysoc=new Societe($db);
+	$mysoc->setMysoc($conf);
+}
 
 
 // create a jobs object
