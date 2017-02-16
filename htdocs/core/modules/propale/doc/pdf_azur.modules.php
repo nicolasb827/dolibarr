@@ -663,6 +663,29 @@ class pdf_azur extends ModelePDFPropales
 				// Pied de page
 				$this->_pagefoot($pdf,$object,$outputlangs);
 				if (method_exists($pdf,'AliasNbPages')) $pdf->AliasNbPages();
+				
+				// Ajout des CGV dans la propale
+				// Par Philippe SAGOT (philazerty) le 21/09/2012
+				if (file_exists(DOL_DATA_ROOT."/mycompany/cgv/cgv.pdf")){
+                    $pagecount = $pdf->setSourceFile(DOL_DATA_ROOT."/mycompany/cgv/cgv.pdf");
+                    for ($i = 1; $i <= $pagecount; $i++) {
+                        $tplidx = $pdf->ImportPage($i);
+                        $s = $pdf->getTemplatesize($tplidx);
+                        $pdf->AddPage('P', array($s['w'], $s['h']));
+                        $pdf->useTemplate($tplidx);
+                        // Ajout du watermark (brouillon)
+                        if ($object->statut==0 && (!empty($conf->global->FACTURE_DRAFT_WATERMARK))) {
+                            pdf_watermark($pdf,$outputlangs,$this->page_hauteur,$this->page_largeur,'mm',$conf->global->FACTURE_DRAFT_WATERMARK);
+                            $pdf->SetTextColor(0,0,60);
+                        }
+                        // Ajout du footer / pied de page
+						pdf_pagefoot($pdf,$outputlangs,'',$this->emetteur,$this->marge_basse,$this->marge_gauche,$this->page_hauteur,$object);
+						//if (!empty($conf->global->RUBIS_PAGE_NUMBER)){
+						//	$pdf->SetXY(190,290);
+						//	$pdf->MultiCell(30, 3, $outputlangs->transnoentities("Page").' '.$pdf->getAliasNumPage().'/'.$pdf->getAliasNbPages(),0,'L',0);
+						//}	
+                    }
+                }
 
 				//If propal merge product PDF is active
 				if (!empty($conf->global->PRODUIT_PDF_MERGE_PROPAL))
