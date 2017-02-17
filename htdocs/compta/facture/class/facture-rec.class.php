@@ -40,6 +40,7 @@ class FactureRec extends CommonInvoice
 {
 	public $element='facturerec';
 	public $table_element='facture_rec';
+	public $table_element_xtrafields='facture_rec';
 	public $table_element_line='facturedet_rec';
 	public $fk_element='fk_facture';
 

@@ -159,12 +159,6 @@ function invoice_admin_prepare_head()
 	$head[$h][2] = 'attributeslines';
 	$h++;
 
-	$head[$h][0] = DOL_URL_ROOT.'/compta/facture/admin/facture-rec_cust_extrafields.php';
-	$head[$h][1] = $langs->trans("ExtraFieldsCustomerInvoicesRec");
-	$head[$h][2] = 'attributes';
-	$h++;
-
-
 	complete_head_from_modules($conf,$langs,null,$head,$h,'invoice_admin','remove');
 
 	return $head;

@@ -1602,4 +1602,3 @@ UrlToGetKeyToUseAPIs=Url pour obtenir le jeton pour utiliser l'API (une fois le 
 ListOfAvailableAPIs=Liste des APIs disponibles
 activateModuleDependNotSatisfied=Le module "%s" dépend du module "%s" qui est manquant, aussi le module "%1$s" peut ne pas fonctionner correctement. Merci d'installer le module "%2$s" ou désactiver le module "%1$s" si vous ne souhaitez pas avoir de mauvaise surprise
 CommandIsNotInsideAllowedCommands=The command you try to run is not inside list of allowed commands defined into parameter <strong>$dolibarr_main_restrict_os_commands</strong> into <strong>conf.php</strong> file.
-ExtraFieldsCustomerInvoicesRec=Attributs supplémentaires (factures récurrentes)

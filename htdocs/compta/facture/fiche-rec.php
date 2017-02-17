@@ -201,6 +201,7 @@ if ($action == 'add')
             }
 		}
 		// get options
+		// TODO: copy from invoice
 		{
 			$extrafields = new ExtraFields($db);
 			$extralabels = $extrafields->fetch_name_optionals_label($object->table_element);
@@ -940,8 +941,8 @@ if ($action == 'create')
 
 		// add custom fields of facture if any
 		$extrafields = new ExtraFields($db);
-		$extralabels=$extrafields->fetch_name_optionals_label($object->table_element);
-		$extralabels_rec = $extrafields->fetch_name_optionals_label("facture_rec");
+		// TODO:
+		$extralabels=$extrafields->fetch_name_optionals_label($object->table_element_xtrafields);
 		foreach ($extralabels as $key => $value) {
 			if (!key_exists($key, $extralabels_rec)) {
 				unset($extrafields->attribute_label[$key]);
