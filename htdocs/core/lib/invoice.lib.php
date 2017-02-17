@@ -34,7 +34,7 @@
 function facture_prepare_head($object)
 {
 	global $db, $langs, $conf;
-	
+
 	$h = 0;
 	$head = array();
 
@@ -69,7 +69,7 @@ function facture_prepare_head($object)
 	    $sql .= " FROM ".MAIN_DB_PREFIX."prelevement_facture_demande as pfd";
 	    $sql .= " WHERE pfd.fk_facture = ".$object->id;
         $resql=$db->query($sql);
-        if ($resql) 
+        if ($resql)
         {
             $obj=$db->fetch_object($resql);
             if ($obj) $nbStandingOrders = $obj->nb;
@@ -158,6 +158,12 @@ function invoice_admin_prepare_head()
 	$head[$h][1] = $langs->trans("ExtraFieldsLines");
 	$head[$h][2] = 'attributeslines';
 	$h++;
+
+	$head[$h][0] = DOL_URL_ROOT.'/compta/facture/admin/facture-rec_cust_extrafields.php';
+	$head[$h][1] = $langs->trans("ExtraFieldsCustomerInvoicesRec");
+	$head[$h][2] = 'attributes';
+	$h++;
+
 
 	complete_head_from_modules($conf,$langs,null,$head,$h,'invoice_admin','remove');
 

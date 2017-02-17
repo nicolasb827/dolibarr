@@ -200,6 +200,19 @@ if ($action == 'add')
                 $object->linked_objects[$object->origin] = $object->origin_id;
             }
 		}
+		// get options
+		{
+			$extrafields = new ExtraFields($db);
+			$extralabels = $extrafields->fetch_name_optionals_label($object->table_element);
+			$array_options = $extrafields->setOptionalsFromPost($extralabels,$object);
+			// Unset extrafield
+			if (is_array($extralabels)) {
+				// Get extra fields
+				foreach ($extralabels as $key => $value) {
+					unset($_POST["options_" . $key]);
+				}
+			}
+		}
 
 		$db->begin();
 
@@ -853,23 +866,44 @@ if ($action == 'create')
 
 		$object->fetch_thirdparty();
 
+		// copy title from ref or ref_client is titre not set in POST variable
+		$title = "";
+		if (!empty($_POST["titre"])) {
+			$title = $_POST["titre"];
+		} elseif (!empty($object->ref) && !preg_match('/(PROV\d+)/', $object->ref)) {
+			$title = $object->ref;
+		} else {
+			$title = $object->ref_client;
+		}
+
 		// Title
 		print '<tr><td class="titlefieldcreate fieldrequired">'.$langs->trans("Title").'</td><td>';
-		print '<input class="flat quatrevingtpercent" type="text" name="titre" value="'.$_POST["titre"].'">';
+		print '<input class="flat quatrevingtpercent" type="text" name="titre" value="'.$title.'">';
 		print '</td></tr>';
 
 		// Third party
 		print '<tr><td class="titlefieldcreate">'.$langs->trans("Customer").'</td><td>'.$object->thirdparty->getNomUrl(1,'customer').'</td>';
 		print '</tr>';
 
+		// copy notes from facture
+		$public_note = "";
+		if (!empty($object->note_public)) {
+			$public_note = dol_htmlentitiesbr_decode($object->note_public);
+		}
+
 		// Note public
 		print '<tr><td>'.$langs->trans("NotePublic").'</td><td valign="top">';
-		print '<textarea class="flat centpercent" name="note_public" wrap="soft" rows="'.ROWS_4.'"></textarea>';
+		print '<textarea class="flat centpercent" name="note_public" wrap="soft" rows="'.ROWS_4.'">'.$public_note.'</textarea>';
 		print '</td></tr>';
 
+		// copy notes from facture
+		$private_note = "";
+		if (!empty($object->note_private)) {
+			$private_note = dol_htmlentitiesbr_decode($object->note_private);
+		}
 		// Note private
 		print '<tr><td>'.$langs->trans("NotePrivate").'</td><td valign="top">';
-		print '<textarea class="flat centpercent" name="note_private" wrap="soft" rows="'.ROWS_4.'"></textarea>';
+		print '<textarea class="flat centpercent" name="note_private" wrap="soft" rows="'.ROWS_4.'">'.$private_note.'</textarea>';
 		print '</td></tr>';
 
 		// Author
@@ -902,6 +936,22 @@ if ($action == 'create')
 			print "<tr><td>".$langs->trans('BankAccount')."</td><td>";
 			$form->formSelectAccount($_SERVER['PHP_SELF'].'?id='.$object->id, $object->fk_account, 'none');
 			print "</td></tr>";
+		}
+
+		// add custom fields of facture if any
+		$extrafields = new ExtraFields($db);
+		$extralabels=$extrafields->fetch_name_optionals_label($object->table_element);
+		$extralabels_rec = $extrafields->fetch_name_optionals_label("facture_rec");
+		foreach ($extralabels as $key => $value) {
+			if (!key_exists($key, $extralabels_rec)) {
+				unset($extrafields->attribute_label[$key]);
+				unset($object->array_options['options_' . $key]);
+			}
+		}
+		$reshook = $hookmanager->executeHooks('formObjectOptions', $parameters, $object, $action); // Note that $action and $object may have been modified by
+		// hook
+		if (empty($reshook) && ! empty($extrafields->attribute_label)) {
+			print $object->showOptionals($extrafields, 'edit');
 		}
 
 		print "</table>";
@@ -1147,6 +1197,14 @@ else
 		}
 		print "</td>";
 		print '</tr>';
+
+		// add custom fields of facture if any
+		$extralabels=$extrafields->fetch_name_optionals_label($object->table_element);
+		$reshook = $hookmanager->executeHooks('formObjectOptions', $parameters, $object, $action); // Note that $action and $object may have been modified by
+		// hook
+		if (empty($reshook) && ! empty($extrafields->attribute_label)) {
+			print $object->showOptionals($extrafields);
+		}
 
 		print "</table>";
 
