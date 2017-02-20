@@ -91,7 +91,7 @@ $hookmanager->initHooks(array('invoicecard','globalcard'));
 $extrafields = new ExtraFields($db);
 
 // fetch optionals attributes and labels
-$extralabels = $extrafields->fetch_name_optionals_label('facturerec');
+$extralabels = $extrafields->fetch_name_optionals_label($object->table_element);
 $search_array_options=$extrafields->getOptionalsFromPost($extralabels,'','search_');
 
 $permissionnote = $user->rights->facture->creer; // Used by the include of actions_setnotes.inc.php
@@ -200,17 +200,42 @@ if ($action == 'add')
                 $object->linked_objects[$object->origin] = $object->origin_id;
             }
 		}
-		// get options
-		// TODO: copy from invoice
+		// get options / extrafields
 		{
-			$extrafields = new ExtraFields($db);
+			/*
+			 * here, we have Facture->xtra fields
+			 * We need to copy fields to FactureRec->xtra fields
+			 * w/o user intervention
+			 */
+			// get Facture labels
+			$extrafields_facture = new ExtraFields($db);
+			$extralabels_facture = $extrafields_facture->fetch_name_optionals_label($object->table_element_xtrafields);
+
+			// get FactureRec labels
+			$extrafields = clone $extrafields_facture;
 			$extralabels = $extrafields->fetch_name_optionals_label($object->table_element);
-			$array_options = $extrafields->setOptionalsFromPost($extralabels,$object);
-			// Unset extrafield
-			if (is_array($extralabels)) {
-				// Get extra fields
-				foreach ($extralabels as $key => $value) {
-					unset($_POST["options_" . $key]);
+
+			$array_options = $extrafields->setOptionalsFromPost($extralabels_facture,$object);
+			if (count($extralabels) > 0)
+			{
+				// if some extra fields are set in FactureRec, use them instead on Facture
+				$array_options = $extrafields->setOptionalsFromPost($extralabels,$object);
+				// Unset extrafield
+				if (is_array($extralabels)) {
+					// Get extra fields
+					foreach ($extralabels as $key => $value) {
+						unset($_POST["options_" . $key]);
+					}
+				}
+			}
+			else
+			{
+				// Unset extrafield
+				if (is_array($extralabels_facture)) {
+					// Get extra fields
+					foreach ($extralabels_facture as $key => $value) {
+						unset($_POST["options_" . $key]);
+					}
 				}
 			}
 		}
@@ -941,14 +966,7 @@ if ($action == 'create')
 
 		// add custom fields of facture if any
 		$extrafields = new ExtraFields($db);
-		// TODO:
-		$extralabels=$extrafields->fetch_name_optionals_label($object->table_element_xtrafields);
-		foreach ($extralabels as $key => $value) {
-			if (!key_exists($key, $extralabels_rec)) {
-				unset($extrafields->attribute_label[$key]);
-				unset($object->array_options['options_' . $key]);
-			}
-		}
+		$extralabels=$extrafields->fetch_name_optionals_label($object->table_element);
 		$reshook = $hookmanager->executeHooks('formObjectOptions', $parameters, $object, $action); // Note that $action and $object may have been modified by
 		// hook
 		if (empty($reshook) && ! empty($extrafields->attribute_label)) {
