@@ -2085,31 +2085,6 @@ if ($action == 'create')
 	    $invoice_predefined->fetch(GETPOST('fac_rec','int'));
 
 	    $dateinvoice = $invoice_predefined->date_when;     // To use next gen date by default later
-	    if (empty($conf->global->IGNORE_PERIOD_IN_RECURRING_INVOICE_FOR_REF_CLIENT)) {
-	    	$rec_ref = $invoice_predefined->ref;
-	    	$next_date_invoice = $invoice_predefined->getNextDate();
-	    	if ($next_date_invoice != 0) {
-				$dt_from = DateTime::createFromFormat("U", $dateinvoice, new DateTimeZone(getServerTimeZoneString()));
-				$dt_to = DateTime::createFromFormat("U", $next_date_invoice, new DateTimeZone(getServerTimeZoneString()));
-				if ($dt_from !== FALSE && $dt_to !== FALSE) {
-					$myMonthArray = monthArray($langs);
-					$str_from_month = $myMonthArray[intval(strftime("%m", $dt_from->format("U")))];
-					$str_from_year = strftime("%Y", $dt_from->format("U"));
-
-					$str_to_month = $myMonthArray[intval(strftime("%m", $dt_to->format("U")))];
-					$str_to_year = strftime("%Y", $dt_to->format("U"));
-					$str_from = $str_from_month . " " . $str_from_year;
-					$str_to = $str_to_month . " " . $str_to_year;
-					if ($str_from != $str_to) {
-						$rec_ref .= " - " . $str_from . " -> " . $str_to;
-					} else {
-						$rec_ref .= " - " . $str_from;
-					}
-					$invoice_predefined->ref = $rec_ref;
-					print '<input type="hidden" name="ref_client" value="' . $rec_ref. '">' . "\n";
-		    	}
-	    	}
-	    }
 	    if (empty($projectid)) $projectid = $invoice_predefined->fk_project;
 	    $cond_reglement_id = $invoice_predefined->cond_reglement_id;
 	    $mode_reglement_id = $invoice_predefined->mode_reglement_id;
