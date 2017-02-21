@@ -303,7 +303,7 @@ class Facture extends CommonInvoice
 				$date_invoice = $_facrec->date_when;
 				$next_date_invoice = $_facrec->getNextDate();
 				if ($next_date_invoice != 0) {
-					$dt_from = DateTime::createFromFormat("U", $dateinvoice, new DateTimeZone(getServerTimeZoneString()));
+					$dt_from = DateTime::createFromFormat("U", $date_invoice, new DateTimeZone(getServerTimeZoneString()));
 					$dt_to = DateTime::createFromFormat("U", $next_date_invoice, new DateTimeZone(getServerTimeZoneString()));
 					if ($dt_from !== FALSE && $dt_to !== FALSE) {
 						$myMonthArray = monthArray($langs);
@@ -608,7 +608,8 @@ class Facture extends CommonInvoice
 						$localtax2_tx,
 						$_facrec->lines[$i]->fk_product,
 						$_facrec->lines[$i]->remise_percent,
-						'','',0,$tva_npr,'','HT',0,
+						$rec_start_date,$rec_end_date,
+							0,$tva_npr,'','HT',0,
 						$_facrec->lines[$i]->product_type,
 						$_facrec->lines[$i]->rang,
 						$_facrec->lines[$i]->special_code,
