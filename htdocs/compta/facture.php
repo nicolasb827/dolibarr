@@ -1998,7 +1998,7 @@ if ($action == 'create')
 	if (!empty($soc->id)) $absolute_discount = $soc->getAvailableDiscounts();
 	$note_public = $object->getDefaultCreateValueFor('note_public', (is_object($objectsrc)?$objectsrc->note_public:null));
 	$note_private = $object->getDefaultCreateValueFor('note_private', ((! empty($origin) && ! empty($originid) && is_object($objectsrc))?$objectsrc->note_private:null));
-	
+
 	if (! empty($conf->use_javascript_ajax))
 	{
 		require_once DOL_DOCUMENT_ROOT . '/core/lib/ajax.lib.php';
@@ -2037,7 +2037,6 @@ if ($action == 'create')
 
 	// Ref
 	print '<tr><td class="titlefieldcreate fieldrequired">' . $langs->trans('Ref') . '</td><td colspan="2">' . $langs->trans('Draft') . '</td></tr>';
-
 	// Thirdparty
 	print '<td class="fieldrequired">' . $langs->trans('Customer') . '</td>';
 	if ($soc->id > 0 && ! GETPOST('fac_rec'))
@@ -2086,6 +2085,31 @@ if ($action == 'create')
 	    $invoice_predefined->fetch(GETPOST('fac_rec','int'));
 
 	    $dateinvoice = $invoice_predefined->date_when;     // To use next gen date by default later
+	    if (empty($conf->global->IGNORE_PERIOD_IN_RECURRING_INVOICE_FOR_REF_CLIENT)) {
+	    	$rec_ref = $invoice_predefined->ref;
+	    	$next_date_invoice = $invoice_predefined->getNextDate();
+	    	if ($next_date_invoice != 0) {
+				$dt_from = DateTime::createFromFormat("U", $dateinvoice, new DateTimeZone(getServerTimeZoneString()));
+				$dt_to = DateTime::createFromFormat("U", $next_date_invoice, new DateTimeZone(getServerTimeZoneString()));
+				if ($dt_from !== FALSE && $dt_to !== FALSE) {
+					$myMonthArray = monthArray($langs);
+					$str_from_month = $myMonthArray[intval(strftime("%m", $dt_from->format("U")))];
+					$str_from_year = strftime("%Y", $dt_from->format("U"));
+
+					$str_to_month = $myMonthArray[intval(strftime("%m", $dt_to->format("U")))];
+					$str_to_year = strftime("%Y", $dt_to->format("U"));
+					$str_from = $str_from_month . " " . $str_from_year;
+					$str_to = $str_to_month . " " . $str_to_year;
+					if ($str_from != $str_to) {
+						$rec_ref .= " - " . $str_from . " -> " . $str_to;
+					} else {
+						$rec_ref .= " - " . $str_from;
+					}
+					$invoice_predefined->ref = $rec_ref;
+					print '<input type="hidden" name="ref_client" value="' . $rec_ref. '">' . "\n";
+		    	}
+	    	}
+	    }
 	    if (empty($projectid)) $projectid = $invoice_predefined->fk_project;
 	    $cond_reglement_id = $invoice_predefined->cond_reglement_id;
 	    $mode_reglement_id = $invoice_predefined->mode_reglement_id;
@@ -2197,7 +2221,7 @@ if ($action == 'create')
 	if ((empty($origin)) || ((($origin == 'propal') || ($origin == 'commande')) && (! empty($originid))))
 	{
 		// Deposit
-		if (empty($conf->global->INVOICE_DISABLE_DEPOSIT)) 
+		if (empty($conf->global->INVOICE_DISABLE_DEPOSIT))
    		{
     	    print '<div class="tagtr listofinvoicetype"><div class="tagtd listofinvoicetype">';
     		$tmp='<input type="radio" id="radio_deposit" name="type" value="3"' . (GETPOST('type') == 3 ? ' checked' : '') . '> ';
@@ -2208,7 +2232,7 @@ if ($action == 'create')
     			});
     		});
     		</script>';
-    
+
     		$desc = $form->textwithpicto($tmp.$langs->trans("InvoiceDeposit"), $langs->transnoentities("InvoiceDepositDesc"), 1, 'help', '', 0, 3);
     		print '<table class="nobordernopadding"><tr><td>';
     		print $desc;
@@ -2222,7 +2246,7 @@ if ($action == 'create')
     			print '<td class="nowrap" style="padding-left: 5px">' . $langs->trans('Value') . ':<input type="text" id="valuedeposit" name="valuedeposit" size="3" value="' . GETPOST('valuedeposit', 'int') . '"/>';
     		}
     		print '</td></tr></table>';
-    
+
     		print '</div></div>';
    		}
 	}
@@ -2254,7 +2278,7 @@ if ($action == 'create')
 		}
 
 		// Replacement
-		if (empty($conf->global->INVOICE_DISABLE_REPLACEMENT)) 
+		if (empty($conf->global->INVOICE_DISABLE_REPLACEMENT))
 		{
     		print '<!-- replacement line -->';
     		print '<div class="tagtr listofinvoicetype"><div class="tagtd listofinvoicetype">';
@@ -2301,7 +2325,7 @@ if ($action == 'create')
 		if ($socid > 0)
 		{
     		// Credit note
-		    if (empty($conf->global->INVOICE_DISABLE_CREDIT_NOTE)) 
+		    if (empty($conf->global->INVOICE_DISABLE_CREDIT_NOTE))
     		{
     			print '<div class="tagtr listofinvoicetype"><div class="tagtd listofinvoicetype">';
     			$tmp='<input type="radio" id="radio_creditnote" name="type" value="2"' . (GETPOST('type') == 2 ? ' checked' : '');
@@ -2337,12 +2361,12 @@ if ($action == 'create')
     			$text .= '</select>';
     			$desc = $form->textwithpicto($text, $langs->transnoentities("InvoiceAvoirDesc"), 1, 'help', '', 0, 3);
     			print $desc;
-    
+
     			print '<div id="credit_note_options" class="clearboth">';
     	        print '&nbsp;&nbsp;&nbsp; <input data-role="none" type="checkbox" name="invoiceAvoirWithLines" id="invoiceAvoirWithLines" value="1" onclick="if($(this).is(\':checked\') ) { $(\'#radio_creditnote\').prop(\'checked\', true); $(\'#invoiceAvoirWithPaymentRestAmount\').removeAttr(\'checked\');   }" '.(GETPOST('invoiceAvoirWithLines','int')>0 ? 'checked':'').' /> <label for="invoiceAvoirWithLines">'.$langs->trans('invoiceAvoirWithLines')."</label>";
     	        print '<br>&nbsp;&nbsp;&nbsp; <input data-role="none" type="checkbox" name="invoiceAvoirWithPaymentRestAmount" id="invoiceAvoirWithPaymentRestAmount" value="1" onclick="if($(this).is(\':checked\') ) { $(\'#radio_creditnote\').prop(\'checked\', true);  $(\'#invoiceAvoirWithLines\').removeAttr(\'checked\');   }" '.(GETPOST('invoiceAvoirWithPaymentRestAmount','int')>0 ? 'checked':'').' /> <label for="invoiceAvoirWithPaymentRestAmount">'.$langs->trans('invoiceAvoirWithPaymentRestAmount')."</label>";
     			print '</div>';
-    
+
     			print '</div></div>';
     		}
 		}
