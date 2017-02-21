@@ -60,7 +60,7 @@ class ExtraFields
 	var $attribute_list;
 	// Array to store if extra field is hidden
 	var $attribute_hidden;		// warning, do not rely on this. If your module need a hidden data, it must use its own table.
-	
+
 	var $error;
 	var $errno;
 
@@ -103,6 +103,23 @@ class ExtraFields
 		$this->attribute_perms = array();
 		$this->attribute_list = array();
 		$this->attribute_hidden = array();
+	}
+
+	/**
+	 * __clone
+	 * @param	ExtraFields	$src	ExtraFiels to clone from
+	 */
+	function __clone() {
+		$arr = array("attribute_type", "attribute_label", "attribute_size",
+				"attribute_elementtype", "attribute_unique", "attribute_required",
+				"attribute_perms", "attribute_list", "attribute_hidden", "error");
+		foreach ($arr as $r) {
+			$src = $this->$r;
+			$this->$r = array();
+			foreach ($src as $isrc) {
+				$this->$r[$isrc] = $src[$isrc];
+			}
+		}
 	}
 
 	/**
@@ -324,7 +341,7 @@ class ExtraFields
 		$table=$elementtype.'_extrafields';
 
 		$error=0;
-		
+
 		if (! empty($attrname) && preg_match("/^\w[a-zA-Z0-9-_]*$/",$attrname))
 		{
 			$result=$this->delete_label($attrname,$elementtype);
@@ -356,7 +373,7 @@ class ExtraFields
                     }
                 }
 			}
-			
+
 			return $result;
 		}
 		else

@@ -91,7 +91,7 @@ $hookmanager->initHooks(array('invoicecard','globalcard'));
 $extrafields = new ExtraFields($db);
 
 // fetch optionals attributes and labels
-$extralabels = $extrafields->fetch_name_optionals_label('facturerec');
+$extralabels = $extrafields->fetch_name_optionals_label($object->table_element);
 $search_array_options=$extrafields->getOptionalsFromPost($extralabels,'','search_');
 
 $permissionnote = $user->rights->facture->creer; // Used by the include of actions_setnotes.inc.php
@@ -199,6 +199,45 @@ if ($action == 'add')
                 $object->origin_id = $contractidid;
                 $object->linked_objects[$object->origin] = $object->origin_id;
             }
+		}
+		// get options / extrafields
+		{
+			/*
+			 * here, we have Facture->xtra fields
+			 * We need to copy fields to FactureRec->xtra fields
+			 * w/o user intervention
+			 */
+			// get Facture labels
+			$extrafields_facture = new ExtraFields($db);
+			$extralabels_facture = $extrafields_facture->fetch_name_optionals_label($object->table_element_xtrafields);
+
+			// get FactureRec labels
+			$extrafields = clone $extrafields_facture;
+			$extralabels = $extrafields->fetch_name_optionals_label($object->table_element);
+
+			$array_options = $extrafields->setOptionalsFromPost($extralabels_facture,$object);
+			if (count($extralabels) > 0)
+			{
+				// if some extra fields are set in FactureRec, use them instead on Facture
+				$array_options = $extrafields->setOptionalsFromPost($extralabels,$object);
+				// Unset extrafield
+				if (is_array($extralabels)) {
+					// Get extra fields
+					foreach ($extralabels as $key => $value) {
+						unset($_POST["options_" . $key]);
+					}
+				}
+			}
+			else
+			{
+				// Unset extrafield
+				if (is_array($extralabels_facture)) {
+					// Get extra fields
+					foreach ($extralabels_facture as $key => $value) {
+						unset($_POST["options_" . $key]);
+					}
+				}
+			}
 		}
 
 		$db->begin();
@@ -853,23 +892,44 @@ if ($action == 'create')
 
 		$object->fetch_thirdparty();
 
+		// copy title from ref or ref_client is titre not set in POST variable
+		$title = "";
+		if (!empty($_POST["titre"])) {
+			$title = $_POST["titre"];
+		} elseif (!empty($object->ref) && !preg_match('/(PROV\d+)/', $object->ref)) {
+			$title = $object->ref;
+		} else {
+			$title = $object->ref_client;
+		}
+
 		// Title
 		print '<tr><td class="titlefieldcreate fieldrequired">'.$langs->trans("Title").'</td><td>';
-		print '<input class="flat quatrevingtpercent" type="text" name="titre" value="'.$_POST["titre"].'">';
+		print '<input class="flat quatrevingtpercent" type="text" name="titre" value="'.$title.'">';
 		print '</td></tr>';
 
 		// Third party
 		print '<tr><td class="titlefieldcreate">'.$langs->trans("Customer").'</td><td>'.$object->thirdparty->getNomUrl(1,'customer').'</td>';
 		print '</tr>';
 
+		// copy notes from facture
+		$public_note = "";
+		if (!empty($object->note_public)) {
+			$public_note = dol_htmlentitiesbr_decode($object->note_public);
+		}
+
 		// Note public
 		print '<tr><td>'.$langs->trans("NotePublic").'</td><td valign="top">';
-		print '<textarea class="flat centpercent" name="note_public" wrap="soft" rows="'.ROWS_4.'"></textarea>';
+		print '<textarea class="flat centpercent" name="note_public" wrap="soft" rows="'.ROWS_4.'">'.$public_note.'</textarea>';
 		print '</td></tr>';
 
+		// copy notes from facture
+		$private_note = "";
+		if (!empty($object->note_private)) {
+			$private_note = dol_htmlentitiesbr_decode($object->note_private);
+		}
 		// Note private
 		print '<tr><td>'.$langs->trans("NotePrivate").'</td><td valign="top">';
-		print '<textarea class="flat centpercent" name="note_private" wrap="soft" rows="'.ROWS_4.'"></textarea>';
+		print '<textarea class="flat centpercent" name="note_private" wrap="soft" rows="'.ROWS_4.'">'.$private_note.'</textarea>';
 		print '</td></tr>';
 
 		// Author
@@ -902,6 +962,15 @@ if ($action == 'create')
 			print "<tr><td>".$langs->trans('BankAccount')."</td><td>";
 			$form->formSelectAccount($_SERVER['PHP_SELF'].'?id='.$object->id, $object->fk_account, 'none');
 			print "</td></tr>";
+		}
+
+		// add custom fields of facture if any
+		$extrafields = new ExtraFields($db);
+		$extralabels=$extrafields->fetch_name_optionals_label($object->table_element);
+		$reshook = $hookmanager->executeHooks('formObjectOptions', $parameters, $object, $action); // Note that $action and $object may have been modified by
+		// hook
+		if (empty($reshook) && ! empty($extrafields->attribute_label)) {
+			print $object->showOptionals($extrafields, 'edit');
 		}
 
 		print "</table>";
@@ -1147,6 +1216,14 @@ else
 		}
 		print "</td>";
 		print '</tr>';
+
+		// add custom fields of facture if any
+		$extralabels=$extrafields->fetch_name_optionals_label($object->table_element);
+		$reshook = $hookmanager->executeHooks('formObjectOptions', $parameters, $object, $action); // Note that $action and $object may have been modified by
+		// hook
+		if (empty($reshook) && ! empty($extrafields->attribute_label)) {
+			print $object->showOptionals($extrafields);
+		}
 
 		print "</table>";
 

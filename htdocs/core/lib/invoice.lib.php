@@ -34,7 +34,7 @@
 function facture_prepare_head($object)
 {
 	global $db, $langs, $conf;
-	
+
 	$h = 0;
 	$head = array();
 
@@ -69,7 +69,7 @@ function facture_prepare_head($object)
 	    $sql .= " FROM ".MAIN_DB_PREFIX."prelevement_facture_demande as pfd";
 	    $sql .= " WHERE pfd.fk_facture = ".$object->id;
         $resql=$db->query($sql);
-        if ($resql) 
+        if ($resql)
         {
             $obj=$db->fetch_object($resql);
             if ($obj) $nbStandingOrders = $obj->nb;
