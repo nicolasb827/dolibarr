@@ -240,7 +240,7 @@ class Facture extends CommonInvoice
 		if (! $this->mode_reglement_id) $this->mode_reglement_id = 0;
 		$this->brouillon = 1;
         if (empty($this->entity)) $this->entity = $conf->entity;
-        
+
 		// Multicurrency (test on $this->multicurrency_tx because we sould take the default rate only if not using origin rate)
 		if (!empty($this->multicurrency_code) && empty($this->multicurrency_tx)) list($this->fk_multicurrency,$this->multicurrency_tx) = MultiCurrency::getIdAndTxFromCode($this->db, $this->multicurrency_code);
 		else $this->fk_multicurrency = MultiCurrency::getIdFromCode($this->db, $this->multicurrency_code);
@@ -282,7 +282,7 @@ class Facture extends CommonInvoice
 
 			$this->socid 		     = $_facrec->socid;  // Invoice created on same thirdparty than template
 			$this->entity            = $_facrec->entity; // Invoice created in same entity than template
-			
+
 			// Fields coming from GUI (priority on template). TODO Value of template should be used as default value on GUI so we can use here always value from GUI
 			$this->fk_project        = GETPOST('projectid','int') > 0 ? GETPOST('projectid','int') : $_facrec->fk_project;
 			$this->note_public       = GETPOST('note_public') ? GETPOST('note_public') : $_facrec->note_public;
@@ -298,12 +298,37 @@ class Facture extends CommonInvoice
 			$this->fk_incoterms		 = $_facrec->fk_incoterms;
 			$this->location_incoterms= $_facrec->location_incoterms;
 
+			$rec_ref = $_facrec->ref;
+			if (empty($conf->global->IGNORE_PERIOD_IN_RECURRING_INVOICE_FOR_REF_CLIENT)) {
+				$date_invoice = $_facrec->date_when;
+				$next_date_invoice = $_facrec->getNextDate();
+				if ($next_date_invoice != 0) {
+					$dt_from = DateTime::createFromFormat("U", $dateinvoice, new DateTimeZone(getServerTimeZoneString()));
+					$dt_to = DateTime::createFromFormat("U", $next_date_invoice, new DateTimeZone(getServerTimeZoneString()));
+					if ($dt_from !== FALSE && $dt_to !== FALSE) {
+						$myMonthArray = monthArray($langs);
+						$str_from_month = $myMonthArray[intval(strftime("%m", $dt_from->format("U")))];
+						$str_from_year = strftime("%Y", $dt_from->format("U"));
+
+						$str_to_month = $myMonthArray[intval(strftime("%m", $dt_to->format("U")))];
+						$str_to_year = strftime("%Y", $dt_to->format("U"));
+						$str_from = $str_from_month . " " . $str_from_year;
+						$str_to = $str_to_month . " " . $str_to_year;
+						if ($str_from != $str_to) {
+							$rec_ref .= " - " . $str_from . " -> " . $str_to;
+						} else {
+							$rec_ref .= " - " . $str_from;
+						}
+					}
+				}
+			}
+
 			// Clean parameters
 			if (! $this->type) $this->type = self::TYPE_STANDARD;
 			$this->ref_client=trim($this->ref_client);
 			if (empty($this->ref_client)) {
 				// if no ref set, use the one in _facrec->ref
-				$this->ref_client = trim($_facrec->ref);
+				$this->ref_client = trim($rec_ref);
 			}
 			$this->note_public=trim($this->note_public);
 			$this->note_private=trim($this->note_private);
@@ -445,6 +470,14 @@ class Facture extends CommonInvoice
 			/*
 			 *  Insert lines of invoices into database
 			 */
+			$date_invoice = $_facrec->date_when;
+			$next_date_invoice = $_facrec->getNextDate();
+			if ($next_date_invoice != 0) {
+				$dt_from = DateTime::createFromFormat("U", $date_invoice, new DateTimeZone(getServerTimeZoneString()));
+				$dt_to = DateTime::createFromFormat("U", $next_date_invoice, new DateTimeZone(getServerTimeZoneString()));
+			}
+			$rec_start_date = $dt_from->format("Y-m-d 00:00:00");
+			$rec_end_date = $dt_to->format("Y-m-d 00:00:00");;
 			if (count($this->lines) && is_object($this->lines[0]))	// If this->lines is array on InvoiceLines (preferred mode)
 			{
 				$fk_parent_line = 0;
@@ -456,6 +489,11 @@ class Facture extends CommonInvoice
 					$newinvoiceline->fk_facture=$this->id;
                     $newinvoiceline->origin = $this->element;           // TODO This seems not used. Here we but origin 'facture' but after
                     $newinvoiceline->origin_id = $this->lines[$i]->id;  // we put an id of object !
+                    if ($newinvoiceline->product_type == Product::TYPE_SERVICE) {
+                    	$newinvoiceline->date_start = $rec_start_date;
+                    	$newinvoiceline->date_end = $rec_end_date;
+                    }
+
 					if ($result >= 0 && ($newinvoiceline->info_bits & 0x01) == 0)	// We keep only lines with first bit = 0
 					{
 						// Reset fk_parent_line for no child products and special product
@@ -491,6 +529,10 @@ class Facture extends CommonInvoice
 						// Reset fk_parent_line for no child products and special product
 						if (($this->lines[$i]->product_type != 9 && empty($this->lines[$i]->fk_parent_line)) || $this->lines[$i]->product_type == 9) {
 							$fk_parent_line = 0;
+						}
+						if ($this->lines[$i]->product_type == Product::TYPE_SERVICE) {
+							$this->lines[$i]->date_start = $rec_start_date;
+							$this->lines[$i]->date_end = $rec_end_date;
 						}
 
 						$result = $this->addline(
@@ -1459,7 +1501,7 @@ class Facture extends CommonInvoice
     			$arraytmp=$formmargin->getMarginInfosArray($srcinvoice, false);
         		$facligne->pa_ht = $arraytmp['pa_total'];
 			}
-			
+
 			$facligne->total_ht  = -$remise->amount_ht;
 			$facligne->total_tva = -$remise->amount_tva;
 			$facligne->total_ttc = -$remise->amount_ttc;
