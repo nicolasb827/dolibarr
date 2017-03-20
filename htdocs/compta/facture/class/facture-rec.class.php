@@ -43,6 +43,7 @@ class FactureRec extends CommonInvoice
 	public $table_element_xtrafields='facture';
 	public $table_element_line='facturedet_rec';
 	public $fk_element='fk_facture';
+	public $picto='bill';
 
 	var $entity;
 	var $number;
@@ -206,23 +207,6 @@ class FactureRec extends CommonInvoice
 			            }
 			        }
 			    }
-			    // Actions on extra fields (by external module or standard code)
-			    // TODO le hook fait double emploi avec le trigger !!
-			    $hookmanager->initHooks(array('invoicedao'));
-			    $parameters=array('invoicerecid'=>$this->id);
-			    $reshook=$hookmanager->executeHooks('insertExtraFields',$parameters,$this,$action); // Note that $action and $object may have been modified by some hooks
-			    if (empty($reshook))
-			    {
-			    	if (empty($conf->global->MAIN_EXTRAFIELDS_DISABLED)) // For avoid conflicts if trigger used
-			    	{
-			    		$result=$this->insertExtraFields();
-			    		if ($result < 0)
-			    		{
-			    			$error++;
-			    		}
-			    	}
-			    }
-			    else if ($reshook < 0) $error++;
 
 				if ($error)
 				{
@@ -465,14 +449,14 @@ class FactureRec extends CommonInvoice
 	/**
 	 * 	Delete template invoice
 	 *
-	 *	@param     	int		$rowid      	Id of invoice to delete. If empty, we delete current instance of invoice
+	 *	@param     	User	$user          	User that delete.
 	 *	@param		int		$notrigger		1=Does not execute triggers, 0= execute triggers
 	 *	@param		int		$idwarehouse	Id warehouse to use for stock change.
 	 *	@return		int						<0 if KO, >0 if OK
 	 */
-	function delete($rowid=0, $notrigger=0, $idwarehouse=-1)
+	function delete($user, $notrigger=0, $idwarehouse=-1)
 	{
-	    if (empty($rowid)) $rowid=$this->id;
+	    $rowid=$this->id;
 
 	    dol_syslog(get_class($this)."::delete rowid=".$rowid, LOG_DEBUG);
 
@@ -1065,7 +1049,7 @@ class FactureRec extends CommonInvoice
         $sql.= ' SET frequency = '.($frequency?$this->db->escape($frequency):'null');
         if (!empty($unit))
         {
-        	$sql.= ', unit_frequency = "'.$this->db->escape($unit).'"';
+        	$sql.= ', unit_frequency = \''.$this->db->escape($unit).'\'';
 		}
         $sql.= ' WHERE rowid = '.$this->id;
 
