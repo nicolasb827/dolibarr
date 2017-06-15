@@ -299,6 +299,7 @@ class Facture extends CommonInvoice
 			$this->location_incoterms= $_facrec->location_incoterms;
 
 			$rec_ref = $_facrec->ref;
+			$next_date_invoice = 0;
 			if (empty($conf->global->IGNORE_PERIOD_IN_RECURRING_INVOICE_FOR_REF_CLIENT)) {
 				$date_invoice = $_facrec->date_when;
 				$next_date_invoice = $_facrec->getNextDate();
@@ -470,8 +471,10 @@ class Facture extends CommonInvoice
 			/*
 			 *  Insert lines of invoices into database
 			 */
-			$date_invoice = $_facrec->date_when;
-			$next_date_invoice = $_facrec->getNextDate();
+			if ($this->fac_rec > 0) {
+				$date_invoice = $_facrec->date_when;
+				$next_date_invoice = $_facrec->getNextDate();
+			}
 			if ($next_date_invoice != 0) {
 				$dt_from = DateTime::createFromFormat("U", $date_invoice, new DateTimeZone(getServerTimeZoneString()));
 				$dt_to = DateTime::createFromFormat("U", $next_date_invoice, new DateTimeZone(getServerTimeZoneString()));
