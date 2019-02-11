@@ -24,7 +24,7 @@
 
 /**
  * CombinePaths
- * 
+ *
  * @param   string $sBasePath     sBasePath
  * @param   string $sFolder       sFolder
  * @return  string                Combined path
@@ -44,7 +44,7 @@ function GetResourceTypePath($resourceType, $sCommand)
 {
 	global $Config ;
 
-	if ( $sCommand == "QuickUpload")
+	if ($sCommand == "QuickUpload")
 		return $Config['QuickUploadPath'][$resourceType] ;
 	else
 		return $Config['FileTypesPath'][$resourceType] ;
@@ -60,7 +60,7 @@ function GetResourceTypePath($resourceType, $sCommand)
 function GetResourceTypeDirectory($resourceType, $sCommand)
 {
 	global $Config ;
-	if ( $sCommand == "QuickUpload")
+	if ($sCommand == "QuickUpload")
 	{
 		if ( strlen($Config['QuickUploadAbsolutePath'][$resourceType]) > 0)
 			return $Config['QuickUploadAbsolutePath'][$resourceType] ;
@@ -299,7 +299,7 @@ function IsAllowedCommand($sCommand)
 {
 	global $Config ;
 
-	if ( !in_array($sCommand, $Config['ConfigAllowedCommands']))
+	if (! in_array($sCommand, $Config['ConfigAllowedCommands']))
 		return false ;
 
 	return true ;
@@ -315,7 +315,7 @@ function GetCurrentFolder()
 	if (!isset($_GET)) {
 		global $_GET;
 	}
-	$sCurrentFolder	= isset( $_GET['CurrentFolder'] ) ? $_GET['CurrentFolder'] : '/' ;
+	$sCurrentFolder	= isset( $_GET['CurrentFolder'] ) ? GETPOST('CurrentFolder', '', 1) : '/' ;
 
 	// Check the current folder syntax (must begin and start with a slash).
 	if (!preg_match('|/$|', $sCurrentFolder))
@@ -388,18 +388,18 @@ EOF;
 }
 
 
-// DOL_CHANGE
+// @CHANGE
 
 // This is the function that sends the results of the uploading process to CKE.
 /**
  * SendCKEditorResults
- * 
+ *
  * @param   string  $callback       callback
  * @param   string  $sFileUrl       sFileUrl
  * @param   string  $customMsg      customMsg
  * @return  void
  */
-function SendCKEditorResults ($callback, $sFileUrl, $customMsg = '')
+function SendCKEditorResults($callback, $sFileUrl, $customMsg = '')
 {
   echo '<script type="text/javascript">';
 
@@ -409,5 +409,3 @@ function SendCKEditorResults ($callback, $sFileUrl, $customMsg = '')
 
   echo '</script>';
 }
-
-

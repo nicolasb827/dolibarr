@@ -26,17 +26,15 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/admin.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/invoice.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/compta/paiement/class/paiement.class.php';
 
-$langs->load("admin");
-$langs->load("errors");
-$langs->load('other');
-$langs->load('bills');
+// Load translation files required by the page
+$langs->loadLangs(array("admin", "other", "errors", "bills"));
 
 if (! $user->admin) accessforbidden();
 
 $action = GETPOST('action','alpha');
 $value = GETPOST('value','alpha');
 $label = GETPOST('label','alpha');
-$scandir = GETPOST('scandir','alpha');
+$scandir = GETPOST('scan_dir','alpha');
 $type='invoice';
 
 if (empty($conf->global->PAYMENT_ADDON)) $conf->global->PAYMENT_ADDON = 'mod_payment_cicada.php';
@@ -69,23 +67,24 @@ if ($action == 'setmod')
     dolibarr_set_const($db, "PAYMENT_ADDON",$value,'chaine',0,'',$conf->entity);
 }
 
-if ($action == 'set_FACTURE_PAYMENTS_ON_DIFFERENT_THIRDPARTIES_BILLS')
+if ($action == 'setparams')
 {
-	$freetext = GETPOST('FACTURE_PAYMENTS_ON_DIFFERENT_THIRDPARTIES_BILLS');	// No alpha here, we want exact string
+	$freetext = GETPOST('FACTURE_PAYMENTS_ON_DIFFERENT_THIRDPARTIES_BILLS','none');	// No alpha here, we want exact string
 
 	$res = dolibarr_set_const($db, "FACTURE_PAYMENTS_ON_DIFFERENT_THIRDPARTIES_BILLS",$freetext,'chaine',0,'',$conf->entity);
 
 	if (! $res > 0) $error++;
 
-	if (! $error)
-	{
-		setEventMessages($langs->trans("SetupSaved"), null, 'mesgs');
-	}
-	else
+	if ($error)
 	{
 		setEventMessages($langs->trans("Error"), null, 'errors');
 	}
+	if (! $error)
+	{
+	    setEventMessages($langs->trans("SetupSaved"), null, 'mesgs');
+	}
 }
+
 
 /*
  * View
@@ -98,11 +97,11 @@ llxHeader("",$langs->trans("BillsSetup"),'EN:Invoice_Configuration|FR:Configurat
 $form=new Form($db);
 
 
-$linkback='<a href="'.DOL_URL_ROOT.'/admin/modules.php">'.$langs->trans("BackToModuleList").'</a>';
+$linkback='<a href="'.DOL_URL_ROOT.'/admin/modules.php?restore_lastsearch_values=1">'.$langs->trans("BackToModuleList").'</a>';
 print load_fiche_titre($langs->trans("BillsSetup"),$linkback,'title_setup');
 
 $head = invoice_admin_prepare_head();
-dol_fiche_head($head, 'payment', $langs->trans("Invoices"), 0, 'invoice');
+dol_fiche_head($head, 'payment', $langs->trans("Invoices"), -1, 'invoice');
 
 /*
  *  Numbering module
@@ -129,8 +128,6 @@ foreach ($dirmodels as $reldir)
         $handle = opendir($dir);
         if (is_resource($handle))
         {
-            $var=true;
-
             while (($file = readdir($handle))!==false)
             {
                 if (! is_dir($dir.$file) || (substr($file, 0, 1) <> '.' && substr($file, 0, 3) <> 'CVS'))
@@ -162,7 +159,7 @@ foreach ($dirmodels as $reldir)
                         if ($module->isEnabled())
                         {
                             $var = !$var;
-                            print '<tr '.$bc[$var].'><td width="100">';
+                            print '<tr class="oddeven"><td width="100">';
                             echo preg_replace('/\-.*$/','',preg_replace('/mod_payment_/','',preg_replace('/\.php$/','',$file)));
                             print "</td><td>\n";
 
@@ -186,7 +183,7 @@ foreach ($dirmodels as $reldir)
                             }
                             else
                             {
-                                print '<a href="'.$_SERVER["PHP_SELF"].'?action=setmod&value='.preg_replace('/\.php$/','',$file).'&scandir='.$module->scandir.'&label='.urlencode($module->name).'" alt="'.$langs->trans("Default").'">'.img_picto($langs->trans("Disabled"),'switch_off').'</a>';
+                                print '<a href="'.$_SERVER["PHP_SELF"].'?action=setmod&value='.preg_replace('/\.php$/','',$file).'&scan_dir='.$module->scandir.'&label='.urlencode($module->name).'" alt="'.$langs->trans("Default").'">'.img_picto($langs->trans("Disabled"),'switch_off').'</a>';
                             }
                             print '</td>';
 
@@ -219,7 +216,6 @@ foreach ($dirmodels as $reldir)
                             print '</td>';
 
                             print "</tr>\n";
-
                         }
                     }
                 }
@@ -231,9 +227,13 @@ foreach ($dirmodels as $reldir)
 
 print '</table>';
 
-print "<br />";
+print "<br>";
 
 print load_fiche_titre($langs->trans("OtherOptions"),'','');
+
+print '<form action="'.$_SERVER["PHP_SELF"].'" method="POST">';
+print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'" />';
+print '<input type="hidden" name="action" value="setparams" />';
 
 print '<table class="noborder" width="100%">';
 print '<tr class="liste_titre">';
@@ -243,24 +243,23 @@ print '<td width="80">&nbsp;</td>';
 print "</tr>\n";
 
 // Allow payments on different thirdparties bills but same parent company
-$var=! $var;
-print '<form action="'.$_SERVER["PHP_SELF"].'" method="POST">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'" />';
-print '<input type="hidden" name="action" value="set_FACTURE_PAYMENTS_ON_DIFFERENT_THIRDPARTIES_BILLS" />';
-print '<tr '.$bc[$var].'><td>';
+print '<tr class="oddeven"><td>';
 print $langs->trans("PaymentOnDifferentThirdBills");
 print '</td><td width="60" align="center">';
 print $form->selectyesno("FACTURE_PAYMENTS_ON_DIFFERENT_THIRDPARTIES_BILLS",$conf->global->FACTURE_PAYMENTS_ON_DIFFERENT_THIRDPARTIES_BILLS,1);
 print '</td><td align="right">';
-print '<input type="submit" class="button" value="'.$langs->trans("Modify").'" />';
 print "</td></tr>\n";
-print '</form>';
 
 print '</table>';
 
+print '<center>';
+print '<input type="submit" class="button" value="'.$langs->trans("Modify").'" />';
+print '</center>';
+
+print '</form>';
+
 dol_fiche_end();
 
-
+// End of page
 llxFooter();
-
 $db->close();

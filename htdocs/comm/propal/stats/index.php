@@ -1,7 +1,7 @@
 <?php
 /* Copyright (C) 2003      Rodolphe Quiedeville <rodolphe@quiedeville.org>
  * Copyright (C) 2004-2011 Laurent Destailleur  <eldy@users.sourceforge.net>
- * Copyright (C) 2005-2012 Regis Houssin        <regis.houssin@capnetworks.com>
+ * Copyright (C) 2005-2012 Regis Houssin        <regis.houssin@inodbox.com>
  * Copyright (C) 2012      Marcos García        <marcosgdf@gmail.com>
  * Copyright (C) 2015      Jean-François Ferry	<jfefe@aternatik.fr>
  *
@@ -37,7 +37,7 @@ $mode=GETPOST("mode")?GETPOST("mode"):'customer';
 if ($mode == 'customer' && ! $user->rights->propale->lire) accessforbidden();
 if ($mode == 'supplier' && ! $user->rights->supplier_proposal->lire) accessforbidden();
 
-$object_statut=GETPOST('propal_statut');
+$object_status=GETPOST('object_status');
 
 $userid=GETPOST('userid','int');
 $socid=GETPOST('socid','int');
@@ -54,10 +54,8 @@ $year = GETPOST('year')>0?GETPOST('year'):$nowyear;
 $startyear=$year-1;
 $endyear=$year;
 
-$langs->load('orders');
-$langs->load('companies');
-$langs->load('other');
-$langs->load('suppliers');
+// Load translation files required by the page
+$langs->loadLangs(array('orders', 'companies', 'other', 'suppliers', 'supplier_proposal'));
 
 
 /*
@@ -67,9 +65,7 @@ $langs->load('suppliers');
 $form=new Form($db);
 $formpropal=new FormPropal($db);
 
-$langs->load('propal');
-$langs->load('other');
-$langs->load("companies");
+$langs->loadLangs(array('propal', 'other', 'companies'));
 
 if ($mode == 'customer')
 {
@@ -91,7 +87,7 @@ dol_mkdir($dir);
 
 
 $stats = new PropaleStats($db, $socid, ($userid>0?$userid:0), $mode);
-if ($object_statut != '' && $object_statut >= 0) $stats->where .= ' AND p.fk_statut IN ('.$object_statut.')';
+if ($object_status != '' && $object_status >= 0) $stats->where .= ' AND p.fk_statut IN ('.$db->escape($object_status).')';
 
 // Build graphic number of object
 $data = $stats->getNbByMonthWithPrevYear($endyear,$startyear);
@@ -241,7 +237,7 @@ $h++;
 
 complete_head_from_modules($conf,$langs,null,$head,$h,'propal_stats');
 
-dol_fiche_head($head,'byyear',$langs->trans("Statistics"));
+dol_fiche_head($head, 'byyear', $langs->trans("Statistics"), -1);
 
 
 print '<div class="fichecenter"><div class="fichethirdleft">';
@@ -265,7 +261,7 @@ print '<div class="fichecenter"><div class="fichethirdleft">';
 	print '</td></tr>';
 	// Status
 	print '<tr><td align="left">'.$langs->trans("Status").'</td><td align="left">';
-	$formpropal->selectProposalStatus($object_statut,0,1,1,$mode);
+    $formpropal->selectProposalStatus(($object_status!=''?$object_status:-1),0,0,1,$mode,'object_status');
 	print '</td></tr>';
 	// Year
 	print '<tr><td align="left">'.$langs->trans("Year").'</td><td align="left">';
@@ -280,6 +276,7 @@ print '<div class="fichecenter"><div class="fichethirdleft">';
 	print '<br><br>';
 //}
 
+print '<div class="div-table-responsive-no-min">';
 print '<table class="noborder" width="100%">';
 print '<tr class="liste_titre" height="24">';
 print '<td align="center">'.$langs->trans("Year").'</td>';
@@ -292,15 +289,14 @@ print '<td align="right">%</td>';
 print '</tr>';
 
 $oldyear=0;
-$var=true;
 foreach ($data as $val)
 {
     $year = $val['year'];
     while (! empty($year) && $oldyear > $year+1)
     {	// If we have empty year
         $oldyear--;
-        $var=!$var;
-        print '<tr '.$bc[$var].' height="24">';
+
+        print '<tr class="oddeven" height="24">';
         print '<td align="center"><a href="'.$_SERVER["PHP_SELF"].'?year='.$oldyear.'&amp;mode='.$mode.($socid>0?'&socid='.$socid:'').($userid>0?'&userid='.$userid:'').'">'.$oldyear.'</a></td>';
         print '<td align="right">0</td>';
         print '<td align="right"></td>';
@@ -310,7 +306,7 @@ foreach ($data as $val)
         print '<td align="right"></td>';
         print '</tr>';
     }
-    print '<tr '.$bc[$var].' height="24">';
+    print '<tr class="oddeven" height="24">';
     print '<td align="center"><a href="'.$_SERVER["PHP_SELF"].'?year='.$year.($socid>0?'&socid='.$socid:'').($userid>0?'&userid='.$userid:'').'">'.$year.'</a></td>';
     print '<td align="right">'.$val['nb'].'</td>';
 	print '<td align="right" style="'.(($val['nb_diff'] >= 0) ? 'color: green;':'color: red;').'">'.round($val['nb_diff']).'</td>';
@@ -323,13 +319,13 @@ foreach ($data as $val)
 }
 
 print '</table>';
-
+print '</div>';
 
 print '</div><div class="fichetwothirdright"><div class="ficheaddleft">';
 
 
 // Show graphs
-print '<table class="border" width="100%"><tr valign="top"><td align="center">';
+print '<table class="border" width="100%"><tr class="pair nohover"><td align="center">';
 if ($mesg) { print $mesg; }
 else {
     print $px1->show();
@@ -347,7 +343,6 @@ print '<div style="clear:both"></div>';
 
 dol_fiche_end();
 
-
+// End of page
 llxFooter();
-
 $db->close();

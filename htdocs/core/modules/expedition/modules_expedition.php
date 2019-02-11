@@ -2,7 +2,7 @@
 /* Copyright (C) 2003-2004 Rodolphe Quiedeville <rodolphe@quiedeville.org>
  * Copyright (C) 2004-2011 Laurent Destailleur  <eldy@users.sourceforge.net>
  * Copyright (C) 2004      Eric Seigne          <eric.seigne@ryxeo.com>
- * Copyright (C) 2005-2011 Regis Houssin        <regis.houssin@capnetworks.com>
+ * Copyright (C) 2005-2011 Regis Houssin        <regis.houssin@inodbox.com>
  * Copyright (C) 2006      Andre Cianfarani     <acianfa@free.fr>
  * Copyright (C) 2011      Juanjo Menent	    <jmenent@2byte.es>
  * Copyright (C) 2011-2013 Philippe Grand       <philippe.grand@atoo-net.com>
@@ -36,9 +36,13 @@
  */
 abstract class ModelePdfExpedition extends CommonDocGenerator
 {
-    var $error='';
+    /**
+	 * @var string Error code (or message)
+	 */
+	public $error='';
 
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	/**
 	 *  Return list of active generation modules
 	 *
@@ -48,6 +52,7 @@ abstract class ModelePdfExpedition extends CommonDocGenerator
 	 */
 	static function liste_modeles($db,$maxfilenamelength=0)
 	{
+        // phpcs:enable
 		global $conf;
 
 		$type='shipping';
@@ -66,7 +71,10 @@ abstract class ModelePdfExpedition extends CommonDocGenerator
  */
 abstract class ModelNumRefExpedition
 {
-	var $error='';
+	/**
+	 * @var string Error code (or message)
+	 */
+	public $error='';
 
 	/** Return if a model can be used or not
 	 *
@@ -140,25 +148,4 @@ abstract class ModelNumRefExpedition
 		if ($this->version) return $this->version;
 		return $langs->trans("NotAvailable");
 	}
-}
-
-/**
- * 	Create a document onto disk according to template module.
- *
- * 	@param		DoliDB		$db  			Objet base de donnee
- * 	@param		Expedition		$object			Object expedition
- * 	@param		string		$modele			Force le modele a utiliser ('' to not force)
- * 	@param		Translate	$outputlangs	Objet lang a utiliser pour traduction
- *  @param      int			$hidedetails    Hide details of lines
- *  @param      int			$hidedesc       Hide description
- *  @param      int			$hideref        Hide ref
- * 	@return 	int 						1 if OK -1 if KO
- * 	@deprecated Use the new function generateDocument of Expedition class
- * @see Expedition::generateDocument()
- */
-function expedition_pdf_create(DoliDB $db, Expedition $object, $modele, $outputlangs, $hidedetails=0, $hidedesc=0, $hideref=0)
-{
-	dol_syslog(__METHOD__ . " is deprecated", LOG_WARNING);
-
-	return $object->generateDocument($modele, $outputlangs, $hidedetails, $hidedesc, $hideref);
 }

@@ -2,7 +2,7 @@
 /* Copyright (C) 2003-2004 Rodolphe Quiedeville <rodolphe@quiedeville.org>
  * Copyright (C) 2004-2011 Laurent Destailleur  <eldy@users.sourceforge.net>
  * Copyright (C) 2004      Eric Seigne          <eric.seigne@ryxeo.com>
- * Copyright (C) 2006-2011 Regis Houssin        <regis.houssin@capnetworks.com>
+ * Copyright (C) 2006-2011 Regis Houssin        <regis.houssin@inodbox.com>
  * Copyright (C) 2011-2012 Philippe Grand	    <philippe.grand@atoo-net.com>
  * Copyright (C) 2014      Marcos García        <marcosgdf@gmail.com>
  *
@@ -36,8 +36,12 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/commondocgenerator.class.php';
  */
 abstract class ModelePDFDeliveryOrder extends CommonDocGenerator
 {
-	var $error='';
+	/**
+	 * @var string Error code (or message)
+	 */
+	public $error='';
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	/**
 	 *  Return list of active generation modules
 	 *
@@ -47,6 +51,7 @@ abstract class ModelePDFDeliveryOrder extends CommonDocGenerator
 	 */
 	static function liste_modeles($db,$maxfilenamelength=0)
 	{
+        // phpcs:enable
 		global $conf;
 
 		$type='delivery';
@@ -67,7 +72,10 @@ abstract class ModelePDFDeliveryOrder extends CommonDocGenerator
  */
 abstract class ModeleNumRefDeliveryOrder
 {
-	var $error='';
+	/**
+	 * @var string Error code (or message)
+	 */
+	public $error='';
 
 	/**
 	 * Return if a module can be used or not
@@ -144,24 +152,3 @@ abstract class ModeleNumRefDeliveryOrder
 		return $langs->trans("NotAvailable");
 	}
 }
-
-
-
-/**
- *	Create object on disk
- *
- *	@param	DoliDB		$db  			objet base de donnee
- *	@param	Livraison		$object			object delivery
- *	@param	string		$modele			force le modele a utiliser ('' to not force)
- *	@param	Translate	$outputlangs	objet lang a utiliser pour traduction
- *  @return int         				0 if KO, 1 if OK
- * @deprecated Use the new function generateDocument of Livraison class
- * @see Livraison::generateDocument()
- */
-function delivery_order_pdf_create(DoliDB $db, Livraison $object, $modele, $outputlangs='')
-{
-	dol_syslog(__METHOD__ . " is deprecated", LOG_WARNING);
-
-	return $object->generateDocument($modele, $outputlangs);
-}
-

@@ -24,15 +24,15 @@
 
 define("NOLOGIN",1);		// This means this output page does not require to be logged.
 define("NOCSRFCHECK",1);	// We accept to go on this page from external web site.
-require_once('../../main.inc.php');
-require_once(DOL_DOCUMENT_ROOT."/core/lib/admin.lib.php");
-require_once(DOL_DOCUMENT_ROOT."/core/lib/files.lib.php");
-require_once(DOL_DOCUMENT_ROOT."/opensurvey/class/opensurveysondage.class.php");
-require_once(DOL_DOCUMENT_ROOT."/opensurvey/fonctions.php");
+require '../../main.inc.php';
+require_once DOL_DOCUMENT_ROOT."/core/lib/admin.lib.php";
+require_once DOL_DOCUMENT_ROOT."/core/lib/files.lib.php";
+require_once DOL_DOCUMENT_ROOT."/opensurvey/class/opensurveysondage.class.php";
+require_once DOL_DOCUMENT_ROOT."/opensurvey/fonctions.php";
 
 
 // Init vars
-$action=GETPOST('action');
+$action=GETPOST('action','aZ09');
 $numsondage = '';
 if (GETPOST('sondage'))
 {
@@ -41,12 +41,14 @@ if (GETPOST('sondage'))
 
 $object=new Opensurveysondage($db);
 $result=$object->fetch(0,$numsondage);
-if ($result <= 0) dol_print_error('','Failed to get survey id '.$numsondage);
 
 $nblignes=$object->fetch_lines();
 
 //If the survey has not yet finished, then it can be modified
 $canbemodified = ((empty($object->date_fin) || $object->date_fin > dol_now()) && $object->status != Opensurveysondage::STATUS_CLOSED);
+
+// Security check
+if (empty($conf->opensurvey->enabled)) accessforbidden('',0,0,1);
 
 
 /*
@@ -58,28 +60,34 @@ $nbcolonnes = substr_count($object->sujet, ',') + 1;
 $listofvoters=explode(',',$_SESSION["savevoter"]);
 
 // Add comment
-if (GETPOST('ajoutcomment'))
+if (GETPOST('ajoutcomment','alpha'))
 {
 	if (!$canbemodified) accessforbidden();
 
 	$error=0;
 
-	if (! GETPOST('comment'))
+	$comment = GETPOST("comment",'none');
+	$comment_user = GETPOST('commentuser','nohtml');
+
+	if (! $comment)
 	{
 		$error++;
 		setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("Comment")), null, 'errors');
 	}
-	if (! GETPOST('commentuser'))
+	if (! $comment_user)
 	{
 		$error++;
 		setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("User")), null, 'errors');
 	}
 
+	if (! in_array($comment_user, $listofvoters))
+	{
+		setEventMessages($langs->trans("UserMustBeSameThanUserUsedToVote"), null, 'errors');
+		$error++;
+	}
+
 	if (! $error)
 	{
-		$comment = GETPOST("comment");
-		$comment_user = GETPOST('commentuser');
-
 		$resql = $object->addComment($comment, $comment_user);
 
 		if (! $resql) dol_print_error($db);
@@ -87,12 +95,12 @@ if (GETPOST('ajoutcomment'))
 }
 
 // Add vote
-if (GETPOST("boutonp") || GETPOST("boutonp.x") || GETPOST("boutonp_x"))		// boutonp for chrom, boutonp_x for firefox
+if (GETPOST("boutonp") || GETPOST("boutonp.x") || GETPOST("boutonp_x"))		// boutonp for chrome, boutonp_x for firefox
 {
 	if (!$canbemodified) accessforbidden();
 
 	//Si le nom est bien entré
-	if (GETPOST('nom'))
+	if (GETPOST('nom','nohtml'))
 	{
 		$nouveauchoix = '';
 		for ($i=0;$i<$nbcolonnes;$i++)
@@ -110,15 +118,15 @@ if (GETPOST("boutonp") || GETPOST("boutonp.x") || GETPOST("boutonp_x"))		// bout
 			}
 		}
 
-		$nom=substr(GETPOST("nom"),0,64);
-		
+		$nom=substr(GETPOST("nom",'nohtml'),0,64);
+
 		// Check if vote already exists
 		$sql = 'SELECT id_users, nom as name';
 		$sql.= ' FROM '.MAIN_DB_PREFIX.'opensurvey_user_studs';
 		$sql.= " WHERE id_sondage='".$db->escape($numsondage)."' AND nom = '".$db->escape($nom)."' ORDER BY id_users";
 		$resql = $db->query($sql);
 		if (! $resql) dol_print_error($db);
-		
+
 		$num_rows = $db->num_rows($resql);
 		if ($num_rows > 0)
 		{
@@ -152,9 +160,12 @@ if (GETPOST("boutonp") || GETPOST("boutonp.x") || GETPOST("boutonp_x"))		// bout
 					if ($email) {
 						include_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
 
-						$body = $langs->trans('EmailSomeoneVoted', $nom, getUrlSondage($numsondage, true));
+						$application = ($conf->global->MAIN_APPLICATION_TITLE ? $conf->global->MAIN_APPLICATION_TITLE : 'Dolibarr ERP/CRM');
 
-						$cmailfile=new CMailFile("[".MAIN_APPLICATION_TITLE."] ".$langs->trans("Poll").': '.$object->titre, $email, $conf->global->MAIN_MAIL_EMAIL_FROM, $body);
+						$body = str_replace('\n', '<br>', $langs->transnoentities('EmailSomeoneVoted', $nom, getUrlSondage($numsondage, true)));
+						//var_dump($body);exit;
+
+						$cmailfile=new CMailFile("[".$application."] ".$langs->trans("Poll").': '.$object->titre, $email, $conf->global->MAIN_MAIL_EMAIL_FROM, $body, null, null, null, '', '', 0, -1);
 						$result=$cmailfile->sendfile();
 					}
 				}
@@ -241,6 +252,16 @@ $arrayofjs=array();
 $arrayofcss=array('/opensurvey/css/style.css');
 llxHeaderSurvey($object->titre, "", 0, 0, $arrayofjs, $arrayofcss);
 
+if (empty($object->ref))     // For survey, id is a hex string
+{
+    $langs->load("errors");
+    print $langs->trans("ErrorRecordNotFound");
+
+    llxFooterSurvey();
+
+    $db->close();
+    exit();
+}
 
 // Define format of choices
 $toutsujet=explode(",",$object->sujet);
@@ -278,7 +299,7 @@ if (!$canbemodified) {
 	llxFooterSurvey();
 
 	$db->close();
-	die;
+	exit;
 }
 
 print '<form name="formulaire" action="studs.php?sondage='.$numsondage.'"'.'#bas" method="POST">'."\n";
@@ -717,8 +738,12 @@ if ($comments)
 	print "<br><b>" . $langs->trans("CommentsOfVoters") . ":</b><br>\n";
 
 	foreach ($comments as $obj) {
+		// ligne d'un usager pré-authentifié
+		//$mod_ok = (in_array($obj->name, $listofvoters));
+
 		print '<div class="comment"><span class="usercomment">';
-		if (in_array($obj->usercomment, $listofvoters)) print '<a href="'.$_SERVER["PHP_SELF"].'?deletecomment='.$obj->id_comment.'&sondage='.$numsondage.'"> '.img_picto('', 'delete.png').'</a> ';
+		if (in_array($obj->usercomment, $listofvoters)) print '<a href="'.$_SERVER["PHP_SELF"].'?deletecomment='.$obj->id_comment.'&sondage='.$numsondage.'"> '.img_picto('', 'delete.png', '', false, 0, 0, '', 'nomarginleft').'</a> ';
+		//else print img_picto('', 'ellipsis-h', '', false, 0, 0, '', 'nomarginleft').' ';
 		print dol_htmlentities($obj->usercomment).':</span> <span class="comment">'.dol_nl2br(dol_htmlentities($obj->comment))."</span></div>";
 	}
 }
@@ -727,9 +752,9 @@ if ($comments)
 if ($object->allow_comments) {
 	print '<div class="addcomment">' .$langs->trans("AddACommentForPoll") . "<br>\n";
 
-	print '<textarea name="comment" rows="2" cols="60"></textarea><br>'."\n";
+	print '<textarea name="comment" rows="'.ROWS_2.'" class="quatrevingtpercent">'.dol_escape_htmltag(GETPOST('comment','none')).'</textarea><br>'."\n";
 	print $langs->trans("Name") .': ';
-	print '<input type="text" name="commentuser" maxlength="64" /> &nbsp; '."\n";
+	print '<input type="text" name="commentuser" maxlength="64" value="'.GETPOST('commentuser','nohtml').'"> &nbsp; '."\n";
 	print '<input type="submit" class="button" name="ajoutcomment" value="'.dol_escape_htmltag($langs->trans("AddComment")).'"><br>'."\n";
 	print '</form>'."\n";
 

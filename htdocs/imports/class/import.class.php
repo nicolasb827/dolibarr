@@ -38,13 +38,21 @@ class Import
 	var $array_import_fieldshidden;
 	var $array_import_entities;
 	var $array_import_regex;
+	var $array_import_updatekeys;
 	var $array_import_examplevalues;
 	var $array_import_convertvalue;
 	var $array_import_run_sql_after;
 
-	var $error;
-	var $errors;
-	
+	/**
+	 * @var string Error code (or message)
+	 */
+	public $error='';
+
+	/**
+	 * @var string[] Error codes (or messages)
+	 */
+	public $errors = array();
+
 
 	/**
 	 *    Constructor
@@ -57,6 +65,7 @@ class Import
 	}
 
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	/**
 	 *  Load description int this->array_import_module, this->array_import_fields, ... of an importable dataset
 	 *
@@ -66,11 +75,11 @@ class Import
 	 */
 	function load_arrays($user,$filter='')
 	{
+        // phpcs:enable
 		global $langs,$conf;
 
 		dol_syslog(get_class($this)."::load_arrays user=".$user->id." filter=".$filter);
 
-        $var=true;
         $i=0;
 
         require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
@@ -153,6 +162,8 @@ class Import
 						$this->array_import_entities[$i]=$module->import_entities_array[$r];
 						// Tableau des alias a exporter (cle=champ, valeur=alias)
 						$this->array_import_regex[$i]=$module->import_regex_array[$r];
+						// Array of columns allowed as UPDATE options
+						$this->array_import_updatekeys[$i]=$module->import_updatekeys_array[$r];
 						// Array of examples
 						$this->array_import_examplevalues[$i]=$module->import_examplevalues_array[$r];
 						// Tableau des regles de conversion d'une valeur depuis une autre source (cle=champ, valeur=tableau des regles)
@@ -174,6 +185,7 @@ class Import
 
 
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	/**
 	 *  Build an import example file.
 	 *  Arrays this->array_export_xxx are already loaded for required datatoexport
@@ -186,6 +198,7 @@ class Import
 	 */
 	function build_example_file($model, $headerlinefields, $contentlinevalues,$datatoimport)
 	{
+        // phpcs:enable
 		global $conf,$langs;
 
 		$indice=0;
@@ -239,7 +252,7 @@ class Import
 		$sql = 'INSERT INTO '.MAIN_DB_PREFIX.'import_model (';
 		$sql.= 'fk_user, label, type, field';
 		$sql.= ')';
-		$sql.= " VALUES (".($user->id > 0 ? $user->id : 0).", '".$this->db->escape($this->model_name)."', '".$this->datatoimport."', '".$this->hexa."')";
+		$sql.= " VALUES (".($user->id > 0 ? $user->id : 0).", '".$this->db->escape($this->model_name)."', '".$this->db->escape($this->datatoimport)."', '".$this->db->escape($this->hexa)."')";
 
 		dol_syslog(get_class($this)."::create", LOG_DEBUG);
 		$resql=$this->db->query($sql);
@@ -347,5 +360,4 @@ class Import
 			return 1;
 		}
 	}
-
 }

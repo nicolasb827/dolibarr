@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (C) 2014-2015  Frederic France      <frederic.france@free.fr>
+ * Copyright (C) 2014-2018  Frederic France      <frederic.france@netlogic.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 
 include_once DOL_DOCUMENT_ROOT.'/core/modules/printing/modules_printing.php';
 require_once DOL_DOCUMENT_ROOT.'/includes/OAuth/bootstrap.php';
+
 use OAuth\Common\Storage\DoliStorage;
 use OAuth\Common\Consumer\Credentials;
 use OAuth\OAuth2\Service\Google;
@@ -34,16 +35,30 @@ use OAuth\OAuth2\Service\Google;
  */
 class printing_printgcp extends PrintingDriver
 {
-    var $name = 'printgcp';
-    var $desc = 'PrintGCPDesc';
-    var $picto = 'printer';
-    var $active = 'PRINTING_PRINTGCP';
-    var $conf = array();
-    var $google_id = '';
-    var $google_secret = '';
-    var $error;
-    var $errors = array();
-    var $db;
+    public $name = 'printgcp';
+    public $desc = 'PrintGCPDesc';
+    public $picto = 'printer';
+    public $active = 'PRINTING_PRINTGCP';
+    public $conf = array();
+    public $google_id = '';
+    public $google_secret = '';
+
+    /**
+     * @var string Error code (or message)
+     */
+    public $error = '';
+
+    /**
+     * @var string[] Error codes (or messages)
+     */
+    public $errors = array();
+
+    /**
+     * @var DoliDB Database handler.
+     */
+    public $db;
+
+    private $OAUTH_SERVICENAME_GOOGLE = 'Google';
 
     const LOGIN_URL = 'https://accounts.google.com/o/oauth2/token';
     const PRINTERS_SEARCH_URL = 'https://www.google.com/cloudprint/search';
@@ -57,41 +72,46 @@ class printing_printgcp extends PrintingDriver
      */
     function __construct($db)
     {
-        global $conf, $dolibarr_main_url_root;
+        global $conf, $langs, $dolibarr_main_url_root;
 
         // Define $urlwithroot
-        $urlwithouturlroot=preg_replace('/'.preg_quote(DOL_URL_ROOT,'/').'$/i','',trim($dolibarr_main_url_root));
-        $urlwithroot=$urlwithouturlroot.DOL_URL_ROOT;		// This is to use external domain name found into config file
+        $urlwithouturlroot = preg_replace('/'.preg_quote(DOL_URL_ROOT,'/').'$/i','',trim($dolibarr_main_url_root));
+        $urlwithroot = $urlwithouturlroot.DOL_URL_ROOT;		// This is to use external domain name found into config file
         //$urlwithroot=DOL_MAIN_URL_ROOT;					// This is to use same domain name than current
+
         $this->db = $db;
-        
+
         if (!$conf->oauth->enabled) {
-            $this->conf[] = array('varname'=>'PRINTGCP_INFO', 'info'=>'ModuleAuthNotActive', 'type'=>'info');
+            $this->conf[] = array(
+                'varname'=>'PRINTGCP_INFO',
+                'info'=>$langs->transnoentitiesnoconv("WarningModuleNotActive", "OAuth"),
+                'type'=>'info',
+            );
         } else {
-         
+
         	$this->google_id = $conf->global->OAUTH_GOOGLE_ID;
         	$this->google_secret = $conf->global->OAUTH_GOOGLE_SECRET;
         	// Token storage
         	$storage = new DoliStorage($this->db, $this->conf);
-        	//$storage->clearToken('Google');
+        	//$storage->clearToken($this->OAUTH_SERVICENAME_GOOGLE);
         	// Setup the credentials for the requests
         	$credentials = new Credentials(
             	$this->google_id,
             	$this->google_secret,
             	$urlwithroot.'/core/modules/oauth/google_oauthcallback.php'
         	);
-        	$access = ($storage->hasAccessToken('Google')?'HasAccessToken':'NoAccessToken');
+        	$access = ($storage->hasAccessToken($this->OAUTH_SERVICENAME_GOOGLE)?'HasAccessToken':'NoAccessToken');
         	$serviceFactory = new \OAuth\ServiceFactory();
-        	$apiService = $serviceFactory->createService('Google', $credentials, $storage, array());
+        	$apiService = $serviceFactory->createService($this->OAUTH_SERVICENAME_GOOGLE, $credentials, $storage, array());
         	$token_ok=true;
         	try {
-            	$token = $storage->retrieveAccessToken('Google');
+            	$token = $storage->retrieveAccessToken($this->OAUTH_SERVICENAME_GOOGLE);
         	} catch (Exception $e) {
             	$this->errors[] = $e->getMessage();
             	$token_ok = false;
         	}
         	//var_dump($this->errors);exit;
-        
+
         	$expire = false;
         	// Is token expired or will token expire in the next 30 seconds
         	if ($token_ok) {
@@ -105,24 +125,48 @@ class printing_printgcp extends PrintingDriver
                 	$refreshtoken = $token->getRefreshToken();
                 	$token = $apiService->refreshAccessToken($token);
                 	$token->setRefreshToken($refreshtoken);
-                	$storage->storeAccessToken('Google', $token);
+                	$storage->storeAccessToken($this->OAUTH_SERVICENAME_GOOGLE, $token);
             	} catch (Exception $e) {
                 	$this->errors[] = $e->getMessage();
             	}
         	}
             if ($this->google_id != '' && $this->google_secret != '') {
                 $this->conf[] = array('varname'=>'PRINTGCP_INFO', 'info'=>'GoogleAuthConfigured', 'type'=>'info');
-                $this->conf[] = array('varname'=>'PRINTGCP_TOKEN_ACCESS', 'info'=>$access, 'type'=>'info', 'renew'=>$urlwithroot.'/core/modules/oauth/google_oauthcallback.php?state=userinfo_email,userinfo_profile,cloud_print&backtourl='.urlencode(DOL_URL_ROOT.'/printing/admin/printing.php?mode=setup&driver=printgcp'), 'delete'=>($storage->hasAccessToken('Google')?$urlwithroot.'/core/modules/oauth/google_oauthcallback.php?action=delete&backtourl='.urlencode(DOL_URL_ROOT.'/printing/admin/printing.php?mode=setup&driver=printgcp'):''));
+                $this->conf[] = array(
+                    'varname'=>'PRINTGCP_TOKEN_ACCESS',
+                    'info'=>$access,
+                    'type'=>'info',
+                    'renew'=>$urlwithroot.'/core/modules/oauth/google_oauthcallback.php?state=userinfo_email,userinfo_profile,cloud_print&backtourl='.urlencode(DOL_URL_ROOT.'/printing/admin/printing.php?mode=setup&driver=printgcp'),
+                    'delete'=>($storage->hasAccessToken($this->OAUTH_SERVICENAME_GOOGLE)?$urlwithroot.'/core/modules/oauth/google_oauthcallback.php?action=delete&backtourl='.urlencode(DOL_URL_ROOT.'/printing/admin/printing.php?mode=setup&driver=printgcp'):'')
+                );
                 if ($token_ok) {
+                    $expiredat='';
+
                     $refreshtoken = $token->getRefreshToken();
-                    $this->conf[] = array('varname'=>'PRINTGCP_TOKEN_REFRESH',   'info'=>((! empty($refreshtoken))?'Yes':'No'), 'type'=>'info');
-                    $this->conf[] = array('varname'=>'PRINTGCP_TOKEN_EXPIRED',   'info'=>($expire?'Yes':'No'), 'type'=>'info');
-                    $this->conf[] = array('varname'=>'PRINTGCP_TOKEN_EXPIRE_AT', 'info'=>(dol_print_date($token->getEndOfLife(), "dayhour")), 'type'=>'info');
+
+                    $endoflife = $token->getEndOfLife();
+
+                    if ($endoflife == $token::EOL_NEVER_EXPIRES)
+                    {
+                        $expiredat = $langs->trans("Never");
+                    }
+                    elseif ($endoflife == $token::EOL_UNKNOWN)
+                    {
+                        $expiredat = $langs->trans("Unknown");
+                    }
+                    else
+                    {
+                        $expiredat=dol_print_date($endoflife, "dayhour");
+                    }
+
+                    $this->conf[] = array('varname'=>'TOKEN_REFRESH',   'info'=>((! empty($refreshtoken))?'Yes':'No'), 'type'=>'info');
+                    $this->conf[] = array('varname'=>'TOKEN_EXPIRED',   'info'=>($expire?'Yes':'No'), 'type'=>'info');
+                    $this->conf[] = array('varname'=>'TOKEN_EXPIRE_AT', 'info'=>($expiredat), 'type'=>'info');
                 }
                 /*
-                if ($storage->hasAccessToken('Google')) {
+                if ($storage->hasAccessToken($this->OAUTH_SERVICENAME_GOOGLE)) {
                     $this->conf[] = array('varname'=>'PRINTGCP_AUTHLINK', 'link'=>$urlwithroot.'/core/modules/oauth/google_oauthcallback.php?backtourl='.urlencode(DOL_URL_ROOT.'/printing/admin/printing.php?mode=setup&driver=printgcp'), 'type'=>'authlink');
-                    $this->conf[] = array('varname'=>'PRINTGCP_DELETE_TOKEN', 'link'=>$urlwithroot.'/core/modules/oauth/google_oauthcallback.php?action=delete&backtourl='.urlencode(DOL_URL_ROOT.'/printing/admin/printing.php?mode=setup&driver=printgcp'), 'type'=>'delete');
+                    $this->conf[] = array('varname'=>'DELETE_TOKEN', 'link'=>$urlwithroot.'/core/modules/oauth/google_oauthcallback.php?action=delete&backtourl='.urlencode(DOL_URL_ROOT.'/printing/admin/printing.php?mode=setup&driver=printgcp'), 'type'=>'delete');
                 } else {
                     $this->conf[] = array('varname'=>'PRINTGCP_AUTHLINK', 'link'=>$urlwithroot.'/core/modules/oauth/google_oauthcallback.php?backtourl='.urlencode(DOL_URL_ROOT.'/printing/admin/printing.php?mode=setup&driver=printgcp'), 'type'=>'authlink');
                 }*/
@@ -139,12 +183,11 @@ class printing_printgcp extends PrintingDriver
      *
      *  @return  int                     0 if OK, >0 if KO
      */
-    function listAvailablePrinters()
+    public function listAvailablePrinters()
     {
-        global $bc, $conf, $langs;
+        global $conf, $langs;
         $error = 0;
         $langs->load('printing');
-        $var=true;
 
         $html = '<tr class="liste_titre">';
         $html.= '<td>'.$langs->trans('GCP_Name').'</td>';
@@ -156,13 +199,11 @@ class printing_printgcp extends PrintingDriver
         $html.= '<td>'.$langs->trans('GCP_Type').'</td>';
         $html.= '<td align="center">'.$langs->trans("Select").'</td>';
         $html.= '</tr>'."\n";
-        $list = $this->getlist_available_printers();
+        $list = $this->getlistAvailablePrinters();
         //$html.= '<td><pre>'.print_r($list,true).'</pre></td>';
-        $var = true;
         foreach ($list['available'] as $printer_det)
         {
-            $var = !$var;
-            $html.= "<tr ".$bc[$var].">";
+            $html.= '<tr class="oddeven">';
             $html.= '<td>'.$printer_det['name'].'</td>';
             $html.= '<td>'.$printer_det['displayName'].'</td>';
             $html.= '<td>'.$printer_det['id'].'</td>';  // id to identify printer to use
@@ -191,7 +232,7 @@ class printing_printgcp extends PrintingDriver
      *
      *  @return array      list of printers
      */
-    function getlist_available_printers()
+    public function getlistAvailablePrinters()
     {
         // Token storage
         $storage = new DoliStorage($this->db, $this->conf);
@@ -202,11 +243,11 @@ class printing_printgcp extends PrintingDriver
             DOL_MAIN_URL_ROOT.'/core/modules/oauth/google_oauthcallback.php'
         );
         $serviceFactory = new \OAuth\ServiceFactory();
-        $apiService = $serviceFactory->createService('Google', $credentials, $storage, array());
+        $apiService = $serviceFactory->createService($this->OAUTH_SERVICENAME_GOOGLE, $credentials, $storage, array());
         // Check if we have auth token
         $token_ok=true;
         try {
-            $token = $storage->retrieveAccessToken('Google');
+            $token = $storage->retrieveAccessToken($this->OAUTH_SERVICENAME_GOOGLE);
         } catch (Exception $e) {
             $this->errors[] = $e->getMessage();
             $token_ok = false;
@@ -224,7 +265,7 @@ class printing_printgcp extends PrintingDriver
                 $refreshtoken = $token->getRefreshToken();
                 $token = $apiService->refreshAccessToken($token);
                 $token->setRefreshToken($refreshtoken);
-                $storage->storeAccessToken('Google', $token);
+                $storage->storeAccessToken($this->OAUTH_SERVICENAME_GOOGLE, $token);
             } catch (Exception $e) {
                 $this->errors[] = $e->getMessage();
             }
@@ -258,20 +299,22 @@ class printing_printgcp extends PrintingDriver
      * @param   string      $subdir     subdir for file
      * @return  int                     0 if OK, >0 if KO
      */
-    function print_file($file, $module, $subdir='')
+    public function printFile($file, $module, $subdir='')
     {
         require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 
-        global $conf, $user, $db;
+        global $conf, $user;
         $error = 0;
 
-        $fileprint=$conf->{$module}->dir_output;
-        if ($subdir!='') $fileprint.='/'.$subdir;
+        $fileprint = $conf->{$module}->dir_output;
+        if ($subdir!='') {
+            $fileprint.='/'.$subdir;
+        }
         $fileprint.='/'.$file;
         $mimetype = dol_mimetype($fileprint);
         // select printer uri for module order, propal,...
         $sql = "SELECT rowid, printer_id, copy FROM ".MAIN_DB_PREFIX."printing WHERE module='".$module."' AND driver='printgcp' AND userid=".$user->id;
-        $result = $db->query($sql);
+        $result = $this->db->query($sql);
         if ($result)
         {
             $obj = $this->db->fetch_object($result);
@@ -293,11 +336,13 @@ class printing_printgcp extends PrintingDriver
                 }
             }
         }
-        else dol_print_error($db);
+        else dol_print_error($this->db);
 
         $ret = $this->sendPrintToPrinter($printer_id, $file, $fileprint, $mimetype);
-        $this->errors = 'PRINTGCP: '.mb_convert_encoding($ret['errormessage'], "UTF-8");
-        if ($ret['status']!=1) $error++;
+        $this->error = 'PRINTGCP: '.$ret['errormessage'];
+        if ($ret['status']!=1) {
+            $error++;
+        }
         return $error;
     }
 
@@ -325,12 +370,13 @@ class printing_printgcp extends PrintingDriver
         $contents = fread($handle, filesize($filepath));
         fclose($handle);
         // Prepare post fields for sending print
-        $post_fields = array('printerid' => $printerid,
-                             'title' => $printjobtitle,
-                             'contentTransferEncoding' => 'base64',
-                             'content' => base64_encode($contents), // encode file content as base64
-                             'contentType' => $contenttype
-                            );
+        $post_fields = array(
+            'printerid' => $printerid,
+            'title' => $printjobtitle,
+            'contentTransferEncoding' => 'base64',
+            'content' => base64_encode($contents), // encode file content as base64
+            'contentType' => $contenttype,
+        );
         // Dolibarr Token storage
         $storage = new DoliStorage($this->db, $this->conf);
         // Setup the credentials for the requests
@@ -340,12 +386,12 @@ class printing_printgcp extends PrintingDriver
             DOL_MAIN_URL_ROOT.'/core/modules/oauth/google_oauthcallback.php?service=google'
         );
         $serviceFactory = new \OAuth\ServiceFactory();
-        $apiService = $serviceFactory->createService('Google', $credentials, $storage, array());
+        $apiService = $serviceFactory->createService($this->OAUTH_SERVICENAME_GOOGLE, $credentials, $storage, array());
 
         // Check if we have auth token and refresh it
         $token_ok=true;
         try {
-            $token = $storage->retrieveAccessToken('Google');
+            $token = $storage->retrieveAccessToken($this->OAUTH_SERVICENAME_GOOGLE);
         } catch (Exception $e) {
             $this->errors[] = $e->getMessage();
             $token_ok = false;
@@ -356,7 +402,7 @@ class printing_printgcp extends PrintingDriver
                 $refreshtoken = $token->getRefreshToken();
                 $token = $apiService->refreshAccessToken($token);
                 $token->setRefreshToken($refreshtoken);
-                $storage->storeAccessToken('Google', $token);
+                $storage->storeAccessToken($this->OAUTH_SERVICENAME_GOOGLE, $token);
             } catch (Exception $e) {
                 $this->errors[] = $e->getMessage();
             }
@@ -365,7 +411,7 @@ class printing_printgcp extends PrintingDriver
         // Send a request with api
         $response = json_decode($apiService->request(self::PRINT_URL, 'POST', $post_fields), true);
         //print '<tr><td><pre>'.print_r($response, true).'</pre></td></tr>';
-        return array('status' =>$response['success'],'errorcode' =>$response['errorCode'],'errormessage'=>$response['message']);
+        return array('status' => $response['success'], 'errorcode' => $response['errorCode'], 'errormessage' => $response['message']);
     }
 
 
@@ -374,10 +420,10 @@ class printing_printgcp extends PrintingDriver
      *
      *  @return  int                     0 if OK, >0 if KO
      */
-    function list_jobs()
+    public function listJobs()
     {
-        global $conf, $db, $langs, $bc;
-        
+        global $conf, $langs;
+
         $error = 0;
         $html = '';
         // Token storage
@@ -389,11 +435,11 @@ class printing_printgcp extends PrintingDriver
             DOL_MAIN_URL_ROOT.'/core/modules/oauth/google_oauthcallback.php'
         );
         $serviceFactory = new \OAuth\ServiceFactory();
-        $apiService = $serviceFactory->createService('Google', $credentials, $storage, array());
+        $apiService = $serviceFactory->createService($this->OAUTH_SERVICENAME_GOOGLE, $credentials, $storage, array());
         // Check if we have auth token
         $token_ok=true;
         try {
-            $token = $storage->retrieveAccessToken('Google');
+            $token = $storage->retrieveAccessToken($this->OAUTH_SERVICENAME_GOOGLE);
         } catch (Exception $e) {
             $this->errors[] = $e->getMessage();
             $token_ok = false;
@@ -412,7 +458,7 @@ class printing_printgcp extends PrintingDriver
                 $refreshtoken = $token->getRefreshToken();
                 $token = $apiService->refreshAccessToken($token);
                 $token->setRefreshToken($refreshtoken);
-                $storage->storeAccessToken('Google', $token);
+                $storage->storeAccessToken($this->OAUTH_SERVICENAME_GOOGLE, $token);
             } catch (Exception $e) {
                 $this->errors[] = $e->getMessage();
                 $error++;
@@ -428,25 +474,26 @@ class printing_printgcp extends PrintingDriver
         }
         $responsedata = json_decode($response, true);
         //$html .= '<pre>'.print_r($responsedata,true).'</pre>';
+        $html .= '<div class="div-table-responsive">';
         $html .= '<table width="100%" class="noborder">';
         $html .= '<tr class="liste_titre">';
-        $html .= "<td>Id</td>";
-        $html .= "<td>Owner</td>";
-        $html .= '<td>Printer</td>';
-        $html .= '<td>File</td>';
-        $html .= '<td>Status</td>';
-        $html .= '<td>Cancel</td>';
+        $html .= '<td>'.$langs->trans("Id").'</td>';
+        $html .= '<td>'.$langs->trans("Date").'</td>';
+        $html .= '<td>'.$langs->trans("Owner").'</td>';
+        $html .= '<td>'.$langs->trans("Printer").'</td>';
+        $html .= '<td>'.$langs->trans("Filename").'</td>';
+        $html .= '<td>'.$langs->trans("Status").'</td>';
+        $html .= '<td>'.$langs->trans("Cancel").'</td>';
         $html .= '</tr>'."\n";
-        $var = True;
+
         $jobs = $responsedata['jobs'];
         //$html .= '<pre>'.print_r($jobs['0'],true).'</pre>';
-        if (is_array($jobs))
-        {
-            foreach ($jobs as $value)
-            {
-                $var = !$var;
-                $html .= '<tr '.$bc[$var].'>';
+        if (is_array($jobs)) {
+            foreach ($jobs as $value) {
+                $html .= '<tr class="oddeven">';
                 $html .= '<td>'.$value['id'].'</td>';
+                $dates = dol_print_date((int) substr($value['createTime'], 0, 10), 'dayhour');
+                $html .= '<td>'.$dates.'</td>';
                 $html .= '<td>'.$value['ownerId'].'</td>';
                 $html .= '<td>'.$value['printerName'].'</td>';
                 $html .= '<td>'.$value['title'].'</td>';
@@ -457,15 +504,15 @@ class printing_printgcp extends PrintingDriver
         }
         else
         {
-                $html .= '<tr '.$bc[$var].'>';
-                $html .= '<td colspan="6" class="opacitymedium">'.$langs->trans("None").'</td>';
+                $html .= '<tr class="oddeven">';
+                $html .= '<td colspan="7" class="opacitymedium">'.$langs->trans("None").'</td>';
                 $html .= '</tr>';
         }
         $html .= '</table>';
-        
+        $html .= '</div>';
+
         $this->resprint = $html;
-        
+
         return $error;
     }
-
 }

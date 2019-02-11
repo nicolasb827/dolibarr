@@ -1,9 +1,10 @@
 <?php
 /* Copyright (C) 2003		Rodolphe Quiedeville <rodolphe@quiedeville.org>
  * Copyright (C) 2004-2012	Laurent Destailleur  <eldy@users.sourceforge.net>
- * Copyright (C) 2005-2012	Regis Houssin        <regis.houssin@capnetworks.com>
+ * Copyright (C) 2005-2012	Regis Houssin        <regis.houssin@inodbox.com>
  * Copyright (C) 2012		Juanjo Menent        <jmenent@2byte.es>
- * Copyright (C) 2013       Florian Henry		  	<florian.henry@open-concept.pro>
+ * Copyright (C) 2013       Florian Henry           <florian.henry@open-concept.pro>
+ * Copyright (C) 2018       Frédéric France         <frederic.france@netlogic.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,8 +21,8 @@
  */
 
 /**
- *  \file       	htdocs/compta/deplacement/card.php
- *  \brief      	Page to show a trip card
+ *  \file       htdocs/compta/deplacement/card.php
+ *  \brief      Page to show a trip card
  */
 
 require '../../main.inc.php';
@@ -33,6 +34,7 @@ if (! empty($conf->projet->enabled))
     require_once DOL_DOCUMENT_ROOT.'/projet/class/project.class.php';
 }
 
+// Load translation files required by the page
 $langs->load("trips");
 
 
@@ -46,7 +48,7 @@ $confirm = GETPOST('confirm','alpha');
 
 $object = new Deplacement($db);
 
-// Initialize technical object to manage hooks of thirdparties. Note that conf->hooks_modules contains array array
+// Initialize technical object to manage hooks of page. Note that conf->hooks_modules contains array of hook context
 $hookmanager->initHooks(array('tripsandexpensescard','globalcard'));
 
 $permissionnote=$user->rights->deplacement->creer;	// Used by the include of actions_setnotes.inc.php
@@ -213,13 +215,13 @@ else if ($action == 'setdated' && $user->rights->deplacement->creer)
 {
     $dated=dol_mktime(GETPOST('datedhour','int'), GETPOST('datedmin','int'), GETPOST('datedsec','int'), GETPOST('datedmonth','int'), GETPOST('datedday','int'), GETPOST('datedyear','int'));
     $object->fetch($id);
-    $result=$object->setValueFrom('dated',$dated,'','','date');
+    $result=$object->setValueFrom('dated', $dated, '', '', 'date', '', $user, 'DEPLACEMENT_MODIFY');
     if ($result < 0) dol_print_error($db, $object->error);
 }
 else if ($action == 'setkm' && $user->rights->deplacement->creer)
 {
     $object->fetch($id);
-    $result=$object->setValueFrom('km',GETPOST('km','int'));
+    $result=$object->setValueFrom('km', GETPOST('km','int'), '', null, 'text', '', $user, 'DEPLACEMENT_MODIFY');
     if ($result < 0) dol_print_error($db, $object->error);
 }
 
@@ -251,7 +253,7 @@ if ($action == 'create')
     print '<table class="border" width="100%">';
 
     print "<tr>";
-    print '<td width="25%" class="fieldrequired">'.$langs->trans("Type").'</td><td>';
+    print '<td class="fieldrequired">'.$langs->trans("Type").'</td><td>';
     $form->select_type_fees(GETPOST('type','int'),'type',1);
     print '</td></tr>';
 
@@ -262,7 +264,7 @@ if ($action == 'create')
 
     print "<tr>";
     print '<td class="fieldrequired">'.$langs->trans("Date").'</td><td>';
-    print $form->select_date($datec?$datec:-1,'','','','','add',1,1,1);
+    print $form->selectDate($datec?$datec:-1, '', '', '', '', 'add', 1, 1);
     print '</td></tr>';
 
     // Km
@@ -276,10 +278,10 @@ if ($action == 'create')
 
     // Public note
     print '<tr>';
-    print '<td class="border" valign="top">'.$langs->trans('NotePublic').'</td>';
-    print '<td valign="top" colspan="2">';
+    print '<td class="tdtop">'.$langs->trans('NotePublic').'</td>';
+    print '<td>';
 
-    $doleditor = new DolEditor('note_public', GETPOST('note_public', 'alpha'), '', 200, 'dolibarr_notes', 'In', false, true, true, ROWS_8, 100);
+    $doleditor = new DolEditor('note_public', GETPOST('note_public', 'alpha'), '', 200, 'dolibarr_notes', 'In', false, true, true, ROWS_8,'90%');
     print $doleditor->Create(1);
 
     print '</td></tr>';
@@ -288,18 +290,19 @@ if ($action == 'create')
     if (empty($user->societe_id))
     {
         print '<tr>';
-        print '<td class="border" valign="top">'.$langs->trans('NotePrivate').'</td>';
-        print '<td valign="top" colspan="2">';
+        print '<td class="tdtop">'.$langs->trans('NotePrivate').'</td>';
+        print '<td>';
 
-        $doleditor = new DolEditor('note_private', GETPOST('note_private', 'alpha'), '', 200, 'dolibarr_notes', 'In', false, true, true, ROWS_8, 100);
+        $doleditor = new DolEditor('note_private', GETPOST('note_private', 'alpha'), '', 200, 'dolibarr_notes', 'In', false, true, true, ROWS_8, '90%');
         print $doleditor->Create(1);
 
         print '</td></tr>';
     }
 
     // Other attributes
-    $parameters=array('colspan' => ' colspan="2"');
+    $parameters=array();
     $reshook=$hookmanager->executeHooks('formObjectOptions',$parameters,$object,$action);    // Note that $action and $object may have been modified by hook
+    print $hookmanager->resPrint;
 
     print '</table>';
 
@@ -340,7 +343,7 @@ else if ($id)
 
             // Ref
             print "<tr>";
-            print '<td width="20%">'.$langs->trans("Ref").'</td><td>';
+            print '<td class="titlefield">'.$langs->trans("Ref").'</td><td>';
             print $object->ref;
             print '</td></tr>';
 
@@ -358,7 +361,7 @@ else if ($id)
 
             // Date
             print '<tr><td class="fieldrequired">'.$langs->trans("Date").'</td><td>';
-            print $form->select_date($object->date,'',0,0,0,'update',1,0,1);
+            print $form->selectDate($object->date, '', 0, 0, 0, 'update', 1, 0);
             print '</td></tr>';
 
             // Km
@@ -373,10 +376,10 @@ else if ($id)
             print '</td></tr>';
 
             // Public note
-            print '<tr><td valign="top">'.$langs->trans("NotePublic").'</td>';
-            print '<td valign="top" colspan="3">';
+            print '<tr><td class="tdtop">'.$langs->trans("NotePublic").'</td>';
+            print '<td>';
 
-            $doleditor = new DolEditor('note_public', $object->note_public, '', 200, 'dolibarr_notes', 'In', false, true, true, ROWS_8, '100');
+            $doleditor = new DolEditor('note_public', $object->note_public, '', 200, 'dolibarr_notes', 'In', false, true, true, ROWS_8, '90%');
             print $doleditor->Create(1);
 
             print "</td></tr>";
@@ -384,18 +387,19 @@ else if ($id)
             // Private note
             if (empty($user->societe_id))
             {
-                print '<tr><td valign="top">'.$langs->trans("NotePrivate").'</td>';
-                print '<td valign="top" colspan="3">';
+                print '<tr><td class="tdtop">'.$langs->trans("NotePrivate").'</td>';
+                print '<td>';
 
-                $doleditor = new DolEditor('note_private', $object->note_private, '', 200, 'dolibarr_notes', 'In', false, true, true, ROWS_8, '100');
+                $doleditor = new DolEditor('note_private', $object->note_private, '', 200, 'dolibarr_notes', 'In', false, true, true, ROWS_8, '90%');
                 print $doleditor->Create(1);
 
                 print "</td></tr>";
             }
 
             // Other attributes
-            $parameters=array('colspan' => ' colspan="3"');
+            $parameters=array();
             $reshook=$hookmanager->executeHooks('formObjectOptions',$parameters,$object,$action);    // Note that $action and $object may have been modified by hook
+            print $hookmanager->resPrint;
 
             print '</table>';
 
@@ -412,12 +416,11 @@ else if ($id)
         else
         {
            /*
-            * Confirm delete trip 
+            * Confirm delete trip
             */
             if ($action == 'delete')
             {
                 print $form->formconfirm($_SERVER["PHP_SELF"]."?id=".$id,$langs->trans("DeleteTrip"),$langs->trans("ConfirmDeleteTrip"),"confirm_delete");
-
             }
 
             $soc = new Societe($db);
@@ -456,7 +459,7 @@ else if ($id)
             print '</td></tr>';
 
             // Km/Price
-            print '<tr><td valign="top">';
+            print '<tr><td class="tdtop">';
             print $form->editfieldkey("FeesKilometersOrAmout",'km',$object->km,$object,$conf->global->MAIN_EDIT_ALSO_INLINE && $user->rights->deplacement->creer,'numeric:6');
             print '</td><td>';
             print $form->editfieldval("FeesKilometersOrAmout",'km',$object->km,$object,$conf->global->MAIN_EDIT_ALSO_INLINE && $user->rights->deplacement->creer,'numeric:6');
@@ -501,9 +504,9 @@ else if ($id)
             // Statut
             print '<tr><td>'.$langs->trans("Status").'</td><td>'.$object->getLibStatut(4).'</td></tr>';
 
-            // Other attributes
-            $parameters=array('colspan' => ' colspan="3"', 'showblocbydefault' => 1);
-            $reshook=$hookmanager->executeHooks('formObjectOptions',$parameters,$object,$action);    // Note that $action and $object may have been modified by hook
+        	// Other attributes
+        	$parameters=array('socid'=>$object->id);
+        	include DOL_DOCUMENT_ROOT . '/core/tpl/extrafields_view.tpl.php';
 
             print "</table><br>";
 
@@ -574,7 +577,6 @@ else if ($id)
     }
 }
 
-
+// End of page
 llxFooter();
-
 $db->close();

@@ -1,5 +1,5 @@
 <?php
-/* Copyright (C) 2010-2014	Regis Houssin	<regis.houssin@capnetworks.com>
+/* Copyright (C) 2010-2014	Regis Houssin	<regis.houssin@inodbox.com>
  * Copyright (C) 2014       Marcos García   <marcosgdf@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -31,18 +31,23 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/commondocgenerator.class.php';
  */
 abstract class ModelePDFProjects extends CommonDocGenerator
 {
-	var $error='';
-
-
 	/**
+	 * @var string Error code (or message)
+	 */
+	public $error='';
+
+
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
+    /**
 	 *  Return list of active generation modules
 	 *
-     *  @param	DoliDB	$db     			Database handler
+     *  @param  DoliDB	$db     			Database handler
      *  @param  integer	$maxfilenamelength  Max length of value to show
      *  @return	array						List of templates
-	 */
+     */
 	static function liste_modeles($db,$maxfilenamelength=0)
 	{
+        // phpcs:enable
 		global $conf;
 
 		$type='project';
@@ -62,7 +67,10 @@ abstract class ModelePDFProjects extends CommonDocGenerator
  */
 abstract class ModeleNumRefProjects
 {
-	var $error='';
+	/**
+	 * @var string Error code (or message)
+	 */
+	public $error='';
 
 	/**
 	 *  Return if a module can be used or not
@@ -139,26 +147,3 @@ abstract class ModeleNumRefProjects
 		return $langs->trans("NotAvailable");
 	}
 }
-
-
-/**
- *  Create an intervention document on disk using template defined into PROJECT_ADDON_PDF
- *
- *  @param	DoliDB		$db  			objet base de donnee
- *  @param	Project		$object			Object fichinter
- *  @param	string		$modele			force le modele a utiliser ('' par defaut)
- *  @param	Translate	$outputlangs	objet lang a utiliser pour traduction
- *  @param  int			$hidedetails    Hide details of lines
- *  @param  int			$hidedesc       Hide description
- *  @param  int			$hideref        Hide ref
- *  @return int         				0 if KO, 1 if OK
- * @deprecated Use the new function generateDocument of Project class
- * @see Project::generateDocument()
- */
-function project_pdf_create(DoliDB $db, Project $object, $modele, $outputlangs, $hidedetails=0, $hidedesc=0, $hideref=0)
-{
-	dol_syslog(__METHOD__ . " is deprecated", LOG_WARNING);
-
-	return $object->generateDocument($modele, $outputlangs, $hidedetails, $hidedesc, $hideref);
-}
-

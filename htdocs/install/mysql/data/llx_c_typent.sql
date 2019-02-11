@@ -3,7 +3,7 @@
 -- Copyright (C) 2004-2009 Laurent Destailleur  <eldy@users.sourceforge.net>
 -- Copyright (C) 2004      Benoit Mortier       <benoit.mortier@opensides.be>
 -- Copyright (C) 2004      Guillaume Delecourt  <guillaume.delecourt@opensides.be>
--- Copyright (C) 2005-2009 Regis Houssin        <regis.houssin@capnetworks.com>
+-- Copyright (C) 2005-2009 Regis Houssin        <regis.houssin@inodbox.com>
 -- Copyright (C) 2007 	   Patrick Raguin       <patrick.raguin@gmail.com>
 --
 -- This program is free software; you can redistribute it and/or modify
@@ -43,6 +43,6 @@ insert into llx_c_typent (id,code,libelle,fk_country,active) values (  7, 'TE_RE
 insert into llx_c_typent (id,code,libelle,fk_country,active) values (  8, 'TE_PRIVATE', 'Particulier',   NULL, 1);
 insert into llx_c_typent (id,code,libelle,fk_country,active) values (100, 'TE_OTHER',   'Autres',        NULL, 1);
 -- Argentina (country 23)
-insert into llx_c_typent (id,code,libelle,fk_country,active) values (231, 'TE_A_RI',    'Responsable Inscripto',    23, 0);
-insert into llx_c_typent (id,code,libelle,fk_country,active) values (232, 'TE_B_RNI',   'Responsable No Inscripto', 23, 0);
-insert into llx_c_typent (id,code,libelle,fk_country,active) values (233, 'TE_C_FE',    'Consumidor Final/Exento',  23, 0);
+insert into llx_c_typent (id,code,libelle,fk_country,active) values (231, 'TE_A_RI',    'Responsable Inscripto (typo A)',    23, 0);
+insert into llx_c_typent (id,code,libelle,fk_country,active) values (232, 'TE_B_RNI',   'Responsable No Inscripto (typo B)', 23, 0);
+insert into llx_c_typent (id,code,libelle,fk_country,active) values (233, 'TE_C_FE',    'Consumidor Final/Exento (typo C)',  23, 0);

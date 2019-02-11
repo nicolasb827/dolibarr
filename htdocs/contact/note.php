@@ -1,7 +1,7 @@
 <?php
 /* Copyright (C) 2001-2003,2005 Rodolphe Quiedeville <rodolphe@quiedeville.org>
  * Copyright (C) 2004-2011      Laurent Destailleur  <eldy@users.sourceforge.net>
- * Copyright (C) 2005-2012      Regis Houssin        <regis.houssin@capnetworks.com>
+ * Copyright (C) 2005-2012      Regis Houssin        <regis.houssin@inodbox.com>
  * Copyright (C) 2010           Juanjo Menent        <jmenent@2byte.es>
  * Copyright (C) 2013           Florian Henry		 <florian.henry@open-concept.pro>
  *
@@ -29,8 +29,9 @@ require '../main.inc.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/contact.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/contact/class/contact.class.php';
 
-$action = GETPOST('action');
+$action = GETPOST('action','aZ09');
 
+// Load translation files required by the page
 $langs->load("companies");
 
 // Security check
@@ -73,84 +74,45 @@ if ($id > 0)
 
     $head = contact_prepare_head($object);
 
-    dol_fiche_head($head, 'note', $title,0,'contact');
+    dol_fiche_head($head, 'note', $title, -1, 'contact');
 
+    $linkback = '<a href="'.DOL_URL_ROOT.'/contact/list.php?restore_lastsearch_values=1">'.$langs->trans("BackToList").'</a>';
 
-    print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-    print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-
-    
-    $linkback = '<a href="'.DOL_URL_ROOT.'/contact/list.php">'.$langs->trans("BackToList").'</a>';
-    dol_banner_tab($object, 'id', $linkback, 1, 'rowid', 'ref', '');
-    
-    print '<div class="fichecenter">';
-    
-    print '<div class="underbanner clearboth"></div>';
-    print '<table class="border centpercent">';
-
-    $linkback = '<a href="'.DOL_URL_ROOT.'/contact/list.php">'.$langs->trans("BackToList").'</a>';
-
-    // Company
+    $morehtmlref='<div class="refidno">';
     if (empty($conf->global->SOCIETE_DISABLE_CONTACTS))
     {
-    	if ($object->socid > 0)
-    	{
-    		$objsoc = new Societe($db);
-    		$objsoc->fetch($object->socid);
-
-    		print '<tr><td>'.$langs->trans("ThirdParty").'</td><td colspan="3">'.$objsoc->getNomUrl(1).'</td></tr>';
-    	}
-
-    	else
-    	{
-    		print '<tr><td>'.$langs->trans("ThirdParty").'</td><td colspan="3">';
-    		print $langs->trans("ContactNotLinkedToCompany");
-    		print '</td></tr>';
-    	}
+        $objsoc=new Societe($db);
+        $objsoc->fetch($object->socid);
+        // Thirdparty
+        $morehtmlref.=$langs->trans('ThirdParty') . ' : ';
+        if ($objsoc->id > 0) $morehtmlref.=$objsoc->getNomUrl(1);
+        else $morehtmlref.=$langs->trans("ContactNotLinkedToCompany");
     }
+    $morehtmlref.='</div>';
+
+    dol_banner_tab($object, 'id', $linkback, 1, 'rowid', 'ref', $morehtmlref);
+
+    $cssclass='titlefield';
+    //if ($action == 'editnote_public') $cssclass='titlefieldcreate';
+    //if ($action == 'editnote_private') $cssclass='titlefieldcreate';
+
+    print '<div class="fichecenter">';
+    print '<div class="underbanner clearboth"></div>';
+
+	print '<table class="border centpercent">';
 
     // Civility
-    print '<tr><td class="titlefield">'.$langs->trans("UserTitle").'</td><td colspan="3">';
+    print '<tr><td class="'.$cssclass.'">'.$langs->trans("UserTitle").'</td><td>';
     print $object->getCivilityLabel();
     print '</td></tr>';
 
-    // Date To Birth
-    print '<tr>';
-    if (! empty($object->birthday))
-    {
-    	include_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
-
-    	print '<td class="titlefield">'.$langs->trans("DateToBirth").'</td><td colspan="3">'.dol_print_date($object->birthday,"day");
-
-    	print ' &nbsp; ';
-    	//var_dump($birthdatearray);
-    	$ageyear=convertSecondToTime($now-$object->birthday,'year')-1970;
-    	$agemonth=convertSecondToTime($now-$object->birthday,'month')-1;
-    	if ($ageyear >= 2) print '('.$ageyear.' '.$langs->trans("DurationYears").')';
-    	else if ($agemonth >= 2) print '('.$agemonth.' '.$langs->trans("DurationMonths").')';
-    	else print '('.$agemonth.' '.$langs->trans("DurationMonth").')';
-
-
-    	print ' &nbsp; - &nbsp; ';
-    	if ($object->birthday_alert) print $langs->trans("BirthdayAlertOn");
-    	else print $langs->trans("BirthdayAlertOff");
-    	print '</td>';
-    }
-    else
-    {
-    	print '<td>'.$langs->trans("DateToBirth").'</td><td colspan="3">'.$langs->trans("Unknown")."</td>";
-    }
-    print "</tr>";
-
     print "</table>";
 
-    print '<div>';
-    
-    print '<br>';
 
-    $cssclass='titlefield';
-    include DOL_DOCUMENT_ROOT.'/core/tpl/notes.tpl.php';
+	$cssclass="titlefield";
+	include DOL_DOCUMENT_ROOT.'/core/tpl/notes.tpl.php';
 
+	print '</div>';
 
     dol_fiche_end();
 }

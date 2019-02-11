@@ -1,7 +1,7 @@
 <?php
 /* Copyright (C) 2001-2005 Rodolphe Quiedeville <rodolphe@quiedeville.org>
  * Copyright (C) 2004-2011 Laurent Destailleur  <eldy@users.sourceforge.net>
- * Copyright (C) 2005-2012 Regis Houssin        <regis.houssin@capnetworks.com>
+ * Copyright (C) 2005-2012 Regis Houssin        <regis.houssin@inodbox.com>
  * Copyright (C) 2010      Juanjo Menent        <jmenent@2byte.es>
  * Copyright (C) 2013      Florian Henry	  	<florian.henry@open-concept.pro>
  * Copyright (C) 2015      Marcos García        <marcosgdf@gmail.com>
@@ -29,7 +29,7 @@
 require '../main.inc.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
 
-$action = GETPOST('action');
+$action = GETPOST('action','aZ09');
 
 $langs->load("companies");
 
@@ -42,6 +42,9 @@ $object = new Societe($db);
 if ($id > 0) $object->fetch($id);
 
 $permissionnote=$user->rights->societe->creer;	// Used by the include of actions_setnotes.inc.php
+
+// Initialize technical object to manage hooks of page. Note that conf->hooks_modules contains array of hook context
+$hookmanager->initHooks(array('thirdpartynote','globalcard'));
 
 
 /*
@@ -58,11 +61,11 @@ include DOL_DOCUMENT_ROOT.'/core/actions_setnotes.inc.php';	// Must be include, 
 $form = new Form($db);
 
 $title=$langs->trans("ThirdParty").' - '.$langs->trans("Notes");
-if (! empty($conf->global->MAIN_HTML_TITLE) && preg_match('/thirdpartynameonly/',$conf->global->MAIN_HTML_TITLE) && $object->name) $title=$object->name.' - '.$langs->trans("Files");
+if (! empty($conf->global->MAIN_HTML_TITLE) && preg_match('/thirdpartynameonly/',$conf->global->MAIN_HTML_TITLE) && $object->name) $title=$object->name.' - '.$langs->trans("Notes");
 $help_url='EN:Module_Third_Parties|FR:Module_Tiers|ES:Empresas';
 llxHeader('',$title,$help_url);
 
-if ($id > 0)
+if ($object->id > 0)
 {
     /*
      * Affichage onglets
@@ -71,27 +74,29 @@ if ($id > 0)
 
     $head = societe_prepare_head($object);
 
-    dol_fiche_head($head, 'note', $langs->trans("ThirdParty"),0,'company');
+    dol_fiche_head($head, 'note', $langs->trans("ThirdParty"), -1, 'company');
 
+    $linkback = '<a href="'.DOL_URL_ROOT.'/societe/list.php?restore_lastsearch_values=1">'.$langs->trans("BackToList").'</a>';
 
-    print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-    print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+    dol_banner_tab($object, 'socid', $linkback, ($user->societe_id?0:1), 'rowid', 'nom');
 
-    dol_banner_tab($object, 'socid', '', ($user->societe_id?0:1), 'rowid', 'nom');
-        
+    $cssclass='titlefield';
+    //if ($action == 'editnote_public') $cssclass='titlefieldcreate';
+    //if ($action == 'editnote_private') $cssclass='titlefieldcreate';
+
     print '<div class="fichecenter">';
-    
+
     print '<div class="underbanner clearboth"></div>';
     print '<table class="border centpercent">';
 
     if (! empty($conf->global->SOCIETE_USEPREFIX))  // Old not used prefix field
     {
-        print '<tr><td class="titlefield">'.$langs->trans('Prefix').'</td><td colspan="3">'.$object->prefix_comm.'</td></tr>';
+        print '<tr><td class="'.$cssclass.'">'.$langs->trans('Prefix').'</td><td colspan="3">'.$object->prefix_comm.'</td></tr>';
     }
 
     if ($object->client)
     {
-        print '<tr><td class="titlefield">';
+        print '<tr><td class="'.$cssclass.'">';
         print $langs->trans('CustomerCode').'</td><td colspan="3">';
         print $object->code_client;
         if ($object->check_codeclient() <> 0) print ' <font class="error">('.$langs->trans("WrongCustomerCode").')</font>';
@@ -100,7 +105,7 @@ if ($id > 0)
 
     if ($object->fournisseur)
     {
-        print '<tr><td class="titlefield">';
+        print '<tr><td class="'.$cssclass.'">';
         print $langs->trans('SupplierCode').'</td><td colspan="3">';
         print $object->code_fournisseur;
         if ($object->check_codefournisseur() <> 0) print ' <font class="error">('.$langs->trans("WrongSupplierCode").')</font>';
@@ -110,17 +115,21 @@ if ($id > 0)
     print "</table>";
 
     print '</div>';
-    
-    print '<br>';
 
-    //$colwidth='25';
-    $cssclass='titlefield';
+    //print '<br>';
+
+    //print '<div class="underbanner clearboth"></div>';
     include DOL_DOCUMENT_ROOT.'/core/tpl/notes.tpl.php';
-
 
     dol_fiche_end();
 }
+else
+{
+	$langs->load("errors");
+	print $langs->trans("ErrorRecordNotFound");
+}
 
+// End of page
 llxFooter();
 $db->close();
 

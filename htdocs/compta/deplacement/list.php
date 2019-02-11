@@ -2,7 +2,7 @@
 /* Copyright (C) 2003		Rodolphe Quiedeville <rodolphe@quiedeville.org>
  * Copyright (C) 2004-2012	Laurent Destailleur  <eldy@users.sourceforge.net>
  * Copyright (C) 2004		Eric Seigne          <eric.seigne@ryxeo.com>
- * Copyright (C) 2005-2011	Regis Houssin        <regis.houssin@capnetworks.com>
+ * Copyright (C) 2005-2011	Regis Houssin        <regis.houssin@inodbox.com>
  * Copyright (C) 2012		Juanjo Menent        <jmenent@2byte.es>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -30,9 +30,8 @@ require_once DOL_DOCUMENT_ROOT.'/compta/deplacement/class/deplacement.class.php'
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formother.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 
-$langs->load("companies");
-$langs->load("users");
-$langs->load("trips");
+// Load translation files required by the page
+$langs->loadLangs(array('companies', 'users', 'trips'));
 
 // Security check
 $socid = GETPOST('socid','int');
@@ -46,8 +45,8 @@ $search_company=GETPOST('search_company','alpha');
 $sortfield = GETPOST("sortfield",'alpha');
 $sortorder = GETPOST("sortorder",'alpha');
 $page = GETPOST("page",'int');
-$limit = GETPOST('limit')?GETPOST('limit','int'):$conf->liste_limit;
-if ($page == -1) { $page = 0; }
+$limit = GETPOST('limit','int')?GETPOST('limit','int'):$conf->liste_limit;
+if (empty($page) || $page == -1) { $page = 0; }     // If $page is not defined, or '' or -1
 $offset = $limit * $page;
 $pageprev = $page - 1;
 $pagenext = $page + 1;
@@ -57,7 +56,7 @@ if (! $sortfield) $sortfield="d.dated";
 $year=GETPOST("year");
 $month=GETPOST("month");
 
-if (GETPOST("button_removefilter_x") || GETPOST("button_removefilter")) // Both test are required to be compatible with all browsers
+if (GETPOST('button_removefilter_x','alpha') || GETPOST('button_removefilter','alpha')) // Both test are required to be compatible with all browsers
 {
 	$search_ref="";
 	$search_name="";
@@ -133,12 +132,12 @@ if ($resql)
     print '<form method="get" action="'.$_SERVER["PHP_SELF"].'">'."\n";
     print '<table class="noborder" width="100%">';
     print "<tr class=\"liste_titre\">";
-    print_liste_field_titre($langs->trans("Ref"),$_SERVER["PHP_SELF"],"d.rowid","","&socid=$socid",'',$sortfield,$sortorder);
-    print_liste_field_titre($langs->trans("Type"),$_SERVER["PHP_SELF"],"d.type","","&socid=$socid",'',$sortfield,$sortorder);
-    print_liste_field_titre($langs->trans("Date"),$_SERVER["PHP_SELF"],"d.dated","","&socid=$socid",'align="center"',$sortfield,$sortorder);
-    print_liste_field_titre($langs->trans("Person"),$_SERVER["PHP_SELF"],"u.lastname","","&socid=$socid",'',$sortfield,$sortorder);
-    print_liste_field_titre($langs->trans("Company"),$_SERVER["PHP_SELF"],"s.nom","","&socid=$socid",'',$sortfield,$sortorder);
-    print_liste_field_titre($langs->trans("FeesKilometersOrAmout"),$_SERVER["PHP_SELF"],"d.km","","&socid=$socid",'align="right"',$sortfield,$sortorder);
+    print_liste_field_titre("Ref",$_SERVER["PHP_SELF"],"d.rowid","","&socid=$socid",'',$sortfield,$sortorder);
+    print_liste_field_titre("Type",$_SERVER["PHP_SELF"],"d.type","","&socid=$socid",'',$sortfield,$sortorder);
+    print_liste_field_titre("Date",$_SERVER["PHP_SELF"],"d.dated","","&socid=$socid",'align="center"',$sortfield,$sortorder);
+    print_liste_field_titre("Person",$_SERVER["PHP_SELF"],"u.lastname","","&socid=$socid",'',$sortfield,$sortorder);
+    print_liste_field_titre("Company",$_SERVER["PHP_SELF"],"s.nom","","&socid=$socid",'',$sortfield,$sortorder);
+    print_liste_field_titre("FeesKilometersOrAmout",$_SERVER["PHP_SELF"],"d.km","","&socid=$socid",'align="right"',$sortfield,$sortorder);
     print_liste_field_titre('');
     print "</tr>\n";
 
@@ -165,12 +164,11 @@ if ($resql)
     // print '<input class="flat" size="10" type="text" name="search_amount" value="'.$search_amount.'">';
     print '</td>';
     print '<td class="liste_titre" align="right">';
-    $searchpitco=$form->showFilterAndCheckAddButtons(0);
-    print $searchpitco;
+    $searchpicto=$form->showFilterAndCheckAddButtons(0);
+    print $searchpicto;
     print '</td>';
     print "</tr>\n";
 
-    $var=true;
     while ($i < min($num,$limit))
     {
         $obj = $db->fetch_object($resql);
@@ -178,8 +176,7 @@ if ($resql)
         $soc = new Societe($db);
         if ($obj->socid) $soc->fetch($obj->socid);
 
-        $var=!$var;
-        print '<tr '.$bc[$var].'>';
+        print '<tr class="oddeven">';
         // Id
         print '<td><a href="card.php?id='.$obj->rowid.'">'.img_object($langs->trans("ShowTrip"),"trip").' '.$obj->rowid.'</a></td>';
         // Type
@@ -215,6 +212,6 @@ else
     dol_print_error($db);
 }
 
+// End of page
 llxFooter();
-
 $db->close();

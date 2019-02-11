@@ -1,6 +1,6 @@
 <?php
 /* Copyright (C) 2005-2012	Laurent Destailleur	<eldy@users.sourceforge.net>
- * Copyright (C) 2005-2012	Regis Houssin		<regis.houssin@capnetworks.com>
+ * Copyright (C) 2005-2012	Regis Houssin		<regis.houssin@inodbox.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,26 +30,50 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
  */
 class ModeleImports
 {
-    var $db;
-    var $datatoimport;
+    /**
+     * @var DoliDB Database handler.
+     */
+    public $db;
 
-	var $error='';
+    public $datatoimport;
 
-	var $id;           // Id of driver
-	var $label;        // Label of driver
-	var $extension;    // Extension of files imported by driver
-	var $version;      // Version of driver
+    /**
+	 * @var string Error code (or message)
+	 */
+	public $error='';
 
-	var $label_lib;    // Label of external lib used by driver
-	var $version_lib;  // Version of external lib used by driver
+    /**
+	 * @var int id of driver
+	 */
+	public $id;
+
+    /**
+     * @var string label
+     */
+    public $label;
+
+	public $extension;    // Extension of files imported by driver
+
+	/**
+     * Dolibarr version of driver
+     * @public string
+     */
+	public $version = 'dolibarr';
+
+	public $label_lib;    // Label of external lib used by driver
+
+	public $version_lib;  // Version of external lib used by driver
 
 	// Array of all drivers
-	var $_driverlabel=array();
-	var $_driverdesc=array();
-	var $_driverversion=array();
+	public $driverlabel=array();
 
-	var $_liblabel=array();
-	var $_libversion=array();
+	public $driverdesc=array();
+
+	public $driverversion=array();
+
+	public $liblabel=array();
+
+	public $libversion=array();
 
 
 	/**
@@ -59,7 +83,7 @@ class ModeleImports
 	{
 	}
 
-	
+
 	/**
 	 * getDriverId
 	 *
@@ -69,7 +93,7 @@ class ModeleImports
 	{
 	    return $this->id;
 	}
-	
+
 	/**
 	 *	getDriverLabel
 	 *
@@ -79,7 +103,7 @@ class ModeleImports
 	{
 	    return $this->label;
 	}
-	
+
 	/**
 	 *	getDriverDesc
 	 *
@@ -89,7 +113,7 @@ class ModeleImports
 	{
 	    return $this->desc;
 	}
-	
+
 	/**
 	 * getDriverExtension
 	 *
@@ -99,7 +123,7 @@ class ModeleImports
 	{
 	    return $this->extension;
 	}
-	
+
 	/**
 	 *	getDriverVersion
 	 *
@@ -109,7 +133,7 @@ class ModeleImports
 	{
 	    return $this->version;
 	}
-	
+
 	/**
 	 *	getDriverLabel
 	 *
@@ -119,7 +143,7 @@ class ModeleImports
 	{
 	    return $this->label_lib;
 	}
-	
+
 	/**
 	 * getLibVersion
 	 *
@@ -129,24 +153,25 @@ class ModeleImports
 	{
 	    return $this->version_lib;
 	}
-	
-	
-	/**
-	 *  Charge en memoire et renvoie la liste des modeles actifs
-	 *
+
+
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
+    /**
+     *  Charge en memoire et renvoie la liste des modeles actifs
+     *
      *  @param	DoliDB	$db     			Database handler
      *  @param  integer	$maxfilenamelength  Max length of value to show
      *  @return	array						List of templates
 	 */
 	function liste_modeles($db,$maxfilenamelength=0)
 	{
+        // phpcs:enable
 		dol_syslog(get_class($this)."::liste_modeles");
 
 		$dir=DOL_DOCUMENT_ROOT."/core/modules/import/";
 		$handle=opendir($dir);
 
 		// Recherche des fichiers drivers imports disponibles
-		$var=True;
 		$i=0;
         if (is_resource($handle))
         {
@@ -166,19 +191,19 @@ class ModeleImports
     				// Picto
     				$this->picto[$module->id]=$module->picto;
     				// Driver properties
-    				$this->_driverlabel[$module->id]=$module->getDriverLabel('');
-    				$this->_driverdesc[$module->id]=$module->getDriverDesc('');
-    				$this->_driverversion[$module->id]=$module->getDriverVersion('');
+    				$this->driverlabel[$module->id]=$module->getDriverLabel('');
+    				$this->driverdesc[$module->id]=$module->getDriverDesc('');
+    				$this->driverversion[$module->id]=$module->getDriverVersion('');
     				// If use an external lib
-    				$this->_liblabel[$module->id]=$module->getLibLabel('');
-    				$this->_libversion[$module->id]=$module->getLibVersion('');
+    				$this->liblabel[$module->id]=$module->getLibLabel('');
+    				$this->libversion[$module->id]=$module->getLibVersion('');
 
     				$i++;
     			}
     		}
         }
 
-		return array_keys($this->_driverlabel);
+		return array_keys($this->driverlabel);
 	}
 
 
@@ -201,7 +226,7 @@ class ModeleImports
 	 */
 	function getDriverLabelForKey($key)
 	{
-		return $this->_driverlabel[$key];
+		return $this->driverlabel[$key];
 	}
 
 	/**
@@ -212,7 +237,7 @@ class ModeleImports
 	 */
 	function getDriverDescForKey($key)
 	{
-		return $this->_driverdesc[$key];
+		return $this->driverdesc[$key];
 	}
 
 	/**
@@ -223,7 +248,7 @@ class ModeleImports
 	 */
 	function getDriverVersionForKey($key)
 	{
-		return $this->_driverversion[$key];
+		return $this->driverversion[$key];
 	}
 
 	/**
@@ -234,7 +259,7 @@ class ModeleImports
 	 */
 	function getLibLabelForKey($key)
 	{
-		return $this->_liblabel[$key];
+		return $this->liblabel[$key];
 	}
 
 	/**
@@ -245,8 +270,6 @@ class ModeleImports
 	 */
 	function getLibVersionForKey($key)
 	{
-		return $this->_libversion[$key];
+		return $this->libversion[$key];
 	}
-
 }
-

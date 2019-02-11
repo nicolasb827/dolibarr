@@ -48,7 +48,8 @@
  */
 
 // include class for decoding filters
-require_once(dirname(__FILE__).'/../tecnickcom/tcpdf/include/tcpdf_filters.php');
+if (defined('TCPDF_PATH')) require_once(constant('TCPDF_PATH').'/include/tcpdf_filters.php');
+else require_once(dirname(__FILE__).'/../tecnickcom/tcpdf/include/tcpdf_filters.php');
 
 if (!defined ('PDF_TYPE_NULL'))
     define ('PDF_TYPE_NULL', 0);
@@ -483,7 +484,7 @@ class tcpdi_parser {
 			$v = $sarr[$key];
 			if (($key == '/Type') AND ($v[0] == PDF_TYPE_TOKEN AND ($v[1] == 'XRef'))) {
 				$valid_crs = true;
-			} elseif (($key == '/Index') AND ($v[0] == PDF_TYPE_ARRAY AND count($v[1] >= 2))) {
+			} elseif (($key == '/Index') AND ($v[0] == PDF_TYPE_ARRAY AND count($v[1]) >= 2)) {
 				// first object number in the subsection
 				$index_first = intval($v[1][0][1]);
 				// number of entries in the subsection

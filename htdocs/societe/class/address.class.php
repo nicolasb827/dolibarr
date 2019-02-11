@@ -1,7 +1,7 @@
 <?php
 /* Copyright (C) 2002-2005 Rodolphe Quiedeville <rodolphe@quiedeville.org>
  * Copyright (C) 2004-2014 Laurent Destailleur  <eldy@users.sourceforge.net>
- * Copyright (C) 2005-2011 Regis Houssin        <regis.houssin@capnetworks.com>
+ * Copyright (C) 2005-2011 Regis Houssin        <regis.houssin@inodbox.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,21 +31,35 @@
  */
 class Address
 {
-	var $db;
+	protected $db;
 
-	var $id;
-	var $type;
-	var $label;
-	var $socid;
-	var $name;
-	var $address;
-	var $zip;
-	var $town;
-	var $country_id;
-	var $country_code;
-	var $phone;
-	var $fax;
-	var $note;
+	/**
+	 * @var int ID
+	 */
+	public $id;
+
+	public $type;
+
+	/**
+     * @var string Address label
+     */
+    public $label;
+
+	public $socid;
+	public $name;
+
+	/**
+	 * @var string Address
+	 */
+	public $address;
+
+	public $zip;
+	public $town;
+	public $country_id;
+	public $country_code;
+	public $phone;
+	public $fax;
+	public $note;
 
 	/**
 	 * Adresses liees a la societe
@@ -124,7 +138,6 @@ class Address
 				$this->db->rollback();
 				return -2;
 			}
-
 		}
 		else
 		{
@@ -228,9 +241,9 @@ class Address
 				return $result;
 			}
 		}
-
 	}
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	/**
 	 *  Charge depuis la base toutes les adresses d'une societe
 	 *
@@ -240,6 +253,7 @@ class Address
 	 */
 	function fetch_lines($socid, $user=null)
 	{
+        // phpcs:enable
 		global $langs, $conf;
 
 		$sql = 'SELECT rowid, nom as name, client, fournisseur';
@@ -324,6 +338,7 @@ class Address
 		}
 	}
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	/**
 	 *  Charge depuis la base l'objet adresse
 	 *
@@ -333,6 +348,7 @@ class Address
 	 */
 	function fetch_address($id, $user=null)
 	{
+        // phpcs:enable
 		global $langs;
 		global $conf;
 
@@ -479,14 +495,12 @@ class Address
 			}
 
 			$this->db->free($result);
-
 		}
 		else
 		{
 			dol_print_error($this->db);
 		}
 	}
-
 }
 
 
@@ -495,21 +509,36 @@ class Address
  */
 class AddressLine
 {
+	protected $db;
 
-	var $id;
-	var $date_creation;
-	var $date_modification;
-	var $label;
-	var $name;
-	var $address;
-	var $zip;
-	var $town;
-	var $country_id;
-	var $country_code;
-	var $country;
-	var $phone;
-	var $fax;
-	var $note;
+	/**
+	 * @var int ID
+	 */
+	public $id;
+
+	public $date_creation;
+	public $date_modification;
+
+	/**
+     * @var string stock movements label
+     */
+    public $label;
+
+	public $name;
+
+	/**
+	 * @var string Address
+	 */
+	public $address;
+
+	public $zip;
+	public $town;
+	public $country_id;
+	public $country_code;
+	public $country;
+	public $phone;
+	public $fax;
+	public $note;
 
 
 	/**

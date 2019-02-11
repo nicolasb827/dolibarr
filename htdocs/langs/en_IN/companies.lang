@@ -1,2 +1,5 @@
 # Dolibarr language file - Source file is en_US - companies
-YouMustCreateContactFirst=To be able to add email notifications, you must first define contacts with valid emails for the third party
+OverAllProposals=Quotations
+ProfId1IN=Prof Id 1 (GSTIN)
+ContactForProposals=Quotation's contact
+NoContactForAnyProposal=This contact is not a contact for any quotation

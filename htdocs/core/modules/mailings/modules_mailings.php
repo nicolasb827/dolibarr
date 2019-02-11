@@ -29,10 +29,19 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
 /**
  *		Parent class of emailing target selectors modules
  */
-class MailingTargets    // This can't be abstract as it is used for some method
+class MailingTargets // This can't be abstract as it is used for some method
 {
-    var $db;
-    var $error;
+    /**
+     * @var DoliDB Database handler.
+     */
+    public $db;
+
+    /**
+	 * @var string Error code (or message)
+	 */
+	public $error='';
+
+    public $tooltip='';
 
 
     /**
@@ -48,15 +57,22 @@ class MailingTargets    // This can't be abstract as it is used for some method
     /**
      * Return description of email selector
      *
-     * @return     string      Retourne la traduction de la cle MailingModuleDescXXX ou XXX nom du module, ou $this->desc si non trouve
+     * @return     string      Return translation of module label. Try translation of $this->name then translation of 'MailingModuleDesc'.$this->name, or $this->desc if not found
      */
     function getDesc()
     {
-        global $langs;
+        global $langs, $form;
+
         $langs->load("mails");
         $transstring="MailingModuleDesc".$this->name;
-        if ($langs->trans($transstring) != $transstring) return $langs->trans($transstring);
-        else return $this->desc;
+        $s='';
+
+        if ($langs->trans($this->name) != $this->name) $s=$langs->trans($this->name);
+        elseif ($langs->trans($transstring) != $transstring) $s=$langs->trans($transstring);
+        else $s=$this->desc;
+
+        if ($this->tooltip && is_object($form)) $s .= ' '.$form->textwithpicto('', $langs->trans($this->tooltip), 1, 1);
+        return $s;
     }
 
     /**
@@ -101,6 +117,7 @@ class MailingTargets    // This can't be abstract as it is used for some method
         return '';
     }
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     /**
      * Met a jour nombre de destinataires
      *
@@ -109,6 +126,7 @@ class MailingTargets    // This can't be abstract as it is used for some method
      */
     function update_nb($mailing_id)
     {
+        // phpcs:enable
         // Mise a jour nombre de destinataire dans table des mailings
         $sql = "SELECT COUNT(*) nb FROM ".MAIN_DB_PREFIX."mailing_cibles";
         $sql .= " WHERE fk_mailing = ".$mailing_id;
@@ -133,6 +151,7 @@ class MailingTargets    // This can't be abstract as it is used for some method
         return $nb;
     }
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     /**
      * Ajoute destinataires dans table des cibles
      *
@@ -142,6 +161,7 @@ class MailingTargets    // This can't be abstract as it is used for some method
      */
     function add_to_target($mailing_id, $cibles)
     {
+        // phpcs:enable
     	global $conf;
 
     	$this->db->begin();
@@ -216,14 +236,16 @@ class MailingTargets    // This can't be abstract as it is used for some method
         return $j;
     }
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     /**
      *  Supprime tous les destinataires de la table des cibles
      *
-     *	@param	int		$mailing_id        Id of emailing
+     *	@param  int		$mailing_id        Id of emailing
      *	@return	void
      */
     function clear_target($mailing_id)
     {
+        // phpcs:enable
         $sql = "DELETE FROM ".MAIN_DB_PREFIX."mailing_cibles";
         $sql .= " WHERE fk_mailing = ".$mailing_id;
 
@@ -234,6 +256,4 @@ class MailingTargets    // This can't be abstract as it is used for some method
 
         $this->update_nb($mailing_id);
     }
-
 }
-

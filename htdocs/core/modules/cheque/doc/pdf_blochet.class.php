@@ -34,7 +34,11 @@ require_once DOL_DOCUMENT_ROOT.'/core/modules/cheque/modules_chequereceipts.php'
  */
 class BordereauChequeBlochet extends ModeleChequeReceipts
 {
-	var $emetteur;	// Objet societe qui emet
+	/**
+	 * Issuer
+	 * @var Societe
+	 */
+	public $emetteur;
 
 	/**
 	 *	Constructor
@@ -45,8 +49,8 @@ class BordereauChequeBlochet extends ModeleChequeReceipts
 	{
 		global $conf,$langs,$mysoc;
 
-		$langs->load("main");
-		$langs->load("bills");
+		// Load traductions files requiredby by page
+		$langs->loadLangs(array("main", "bills"));
 
 		$this->db = $db;
 		$this->name = "blochet";
@@ -74,10 +78,11 @@ class BordereauChequeBlochet extends ModeleChequeReceipts
 		$this->tab_height = 200;	//$this->line_height * $this->line_per_page;
 	}
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	/**
 	 *	Fonction to generate document on disk
 	 *
-	 *	@param	RemiseCheque	$object			Object RemiseCheque			
+	 *	@param	RemiseCheque	$object			Object RemiseCheque
 	 *	@param	string			$_dir			Directory
 	 *	@param	string			$number			Number
 	 *	@param	Translate		$outputlangs	Lang output object
@@ -85,6 +90,7 @@ class BordereauChequeBlochet extends ModeleChequeReceipts
 	 */
 	function write_file($object, $_dir, $number, $outputlangs)
 	{
+        // phpcs:enable
 		global $user,$conf,$langs,$hookmanager;
 
         if (! is_object($outputlangs)) $outputlangs=$langs;
@@ -92,11 +98,8 @@ class BordereauChequeBlochet extends ModeleChequeReceipts
         $sav_charset_output=$outputlangs->charset_output;
         if (! empty($conf->global->MAIN_USE_FPDF)) $outputlangs->charset_output='ISO-8859-1';
 
-		$outputlangs->load("main");
-		$outputlangs->load("companies");
-		$outputlangs->load("bills");
-		$outputlangs->load("products");
-        $outputlangs->load("compta");
+        // Load traductions files requiredby by page
+		$outputlangs->loadLangs(array("main", "companies", "bills", "products", "compta"));
 
 		$dir = $_dir . "/".get_exdir($number,0,1,0,$object,'cheque').$number;
 
@@ -129,6 +132,7 @@ class BordereauChequeBlochet extends ModeleChequeReceipts
         $heightforinfotot = 50;	// Height reserved to output the info and total part
         $heightforfreetext= (isset($conf->global->MAIN_PDF_FREETEXT_HEIGHT)?$conf->global->MAIN_PDF_FREETEXT_HEIGHT:5);	// Height reserved to output the free text on last page
         $heightforfooter = $this->marge_basse + 8;	// Height reserved to output the footer (value include bottom margin)
+        if ($conf->global->MAIN_GENERATE_DOCUMENTS_SHOW_FOOT_DETAILS >0) $heightforfooter+= 6;
         $pdf->SetAutoPageBreak(1,0);
 
         if (class_exists('TCPDF'))
@@ -193,11 +197,14 @@ class BordereauChequeBlochet extends ModeleChequeReceipts
 		if (! empty($conf->global->MAIN_UMASK))
 			@chmod($file, octdec($conf->global->MAIN_UMASK));
 
+		$this->result = array('fullpath'=>$file);
+
         $outputlangs->charset_output=$sav_charset_output;
 	    return 1;   // Pas d'erreur
 	}
 
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	/**
 	 *	Generate Header
 	 *
@@ -209,11 +216,12 @@ class BordereauChequeBlochet extends ModeleChequeReceipts
 	 */
 	function Header(&$pdf, $page, $pages, $outputlangs)
 	{
+        // phpcs:enable
 		global $langs;
 		$default_font_size = pdf_getPDFFontSize($outputlangs);
 
-		$outputlangs->load("compta");
-		$outputlangs->load("banks");
+		// Load traductions files requiredby by page
+		$outputlangs->loadLangs(array("compta", "banks"));
 
 		$title = $outputlangs->transnoentities("CheckReceipt");
 		$pdf->SetFont('','B', $default_font_size);
@@ -304,6 +312,7 @@ class BordereauChequeBlochet extends ModeleChequeReceipts
 	}
 
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	/**
 	 *	Output array
 	 *
@@ -315,6 +324,7 @@ class BordereauChequeBlochet extends ModeleChequeReceipts
 	 */
 	function Body(&$pdf, $pagenb, $pages, $outputlangs)
 	{
+        // phpcs:enable
 		// x=10 - Num
 		// x=30 - Banque
 		// x=100 - Emetteur
@@ -377,92 +387,15 @@ class BordereauChequeBlochet extends ModeleChequeReceipts
 		$default_font_size = pdf_getPDFFontSize($outputlangs);
 
 		$showdetails=$conf->global->MAIN_GENERATE_DOCUMENTS_SHOW_FOOT_DETAILS;
-		return pdf_pagefoot($pdf,$outputlangs,'BANK_CHEQUERECEIPT_FREE_TEXT',$this->emetteur,$this->marge_basse,$this->marge_gauche,$this->page_hauteur,$object,$showdetails,$hidefreetext);
-		$paramfreetext='BANK_CHEQUERECEIPT_FREE_TEXT';
-		$marge_basse=$this->marge_basse;
-		$marge_gauche=$this->marge_gauche;
-		$page_hauteur=$this->page_hauteur;
 
 		// Line of free text
-		$line=(! empty($conf->global->$paramfreetext))?$outputlangs->convToOutputCharset($conf->global->$paramfreetext):"";
-
-		$pdf->SetFont('','', $default_font_size - 3);
-		$pdf->SetDrawColor(224,224,224);
-
-		// The start of the bottom of this page footer is positioned according to # of lines
-    	$freetextheight=0;
-    	if ($line)	// Free text
-    	{
-    		//$line="eee<br>\nfd<strong>sf</strong>sdf<br>\nghfghg<br>";
-    	    if (empty($conf->global->PDF_ALLOW_HTML_FOR_FREE_TEXT))   // by default
-    		{
-    			$width=20000; $align='L';	// By default, ask a manual break: We use a large value 20000, to not have automatic wrap. This make user understand, he need to add CR on its text.
-        		if (! empty($conf->global->MAIN_USE_AUTOWRAP_ON_FREETEXT)) {
-        			$width=200; $align='C';
-        		}
-    		    $freetextheight=$pdf->getStringHeight($width,$line);
-    		}
-    		else
-    		{
-                $freetextheight=pdfGetHeightForHtmlContent($pdf,dol_htmlentitiesbr($line, 1, 'UTF-8', 0));      // New method (works for HTML content)
-                //print '<br>'.$freetextheight;exit;
-    		}
-    	}
-
-		$marginwithfooter=$marge_basse + $freetextheight;
-    	$posy=$marginwithfooter+0;
-    
-    	if ($line)	// Free text
-    	{
-    		$pdf->SetXY($dims['lm'],-$posy);
-    		if (empty($conf->global->PDF_ALLOW_HTML_FOR_FREE_TEXT))   // by default
-    		{
-                $pdf->MultiCell(0, 3, $line, 0, $align, 0);
-    		}
-    		else
-    		{
-                $pdf->writeHTMLCell($pdf->page_largeur - $pdf->margin_left - $pdf->margin_right, $freetextheight, $dims['lm'], $dims['hk']-$marginwithfooter, dol_htmlentitiesbr($line, 1, 'UTF-8', 0));
-    		}
-    		$posy-=$freetextheight;
-    	}
-    	
-		// On positionne le debut du bas de page selon nbre de lignes de ce bas de page
-		/*
-		$nbofline=dol_nboflines_bis($line,0,$outputlangs->charset_output);
-		//print 'e'.$line.'t'.dol_nboflines($line);exit;
-		$posy=$marge_basse + ($nbofline*3);
-
-		if ($line)	// Free text
+		$newfreetext='';
+		$paramfreetext='BANK_CHEQUERECEIPT_FREE_TEXT';
+		if (! empty($conf->global->$paramfreetext))
 		{
-			$pdf->SetXY($marge_gauche,-$posy);
-			$pdf->MultiCell(20000, 3, $line, 0, 'L', 0);	// Use a large value 20000, to not have automatic wrap. This make user understand, he need to add CR on its text.
-			$posy-=($nbofline*3);	// 6 of ligne + 3 of MultiCell
-		}*/
-
-		$pdf->SetY(-$posy);
-		$pdf->line($marge_gauche, $page_hauteur-$posy, 200, $page_hauteur-$posy);
-		$posy--;
-
-		/*if ($line1)
-		{
-			$pdf->SetXY($marge_gauche,-$posy);
-			$pdf->MultiCell(200, 2, $line1, 0, 'C', 0);
+		    $newfreetext=make_substitutions($conf->global->$paramfreetext,$substitutionarray);
 		}
 
-		if ($line2)
-		{
-			$posy-=3;
-			$pdf->SetXY($marge_gauche,-$posy);
-			$pdf->MultiCell(200, 2, $line2, 0, 'C', 0);
-		}*/
-
-        // Show page nb only on iso languages (so default Helvetica font)
-        if (pdf_getPDFFont($outputlangs) == 'Helvetica')
-        {
-    		$pdf->SetXY(-20,-$posy);
-            $pdf->MultiCell(11, 2, $pdf->PageNo().'/'.$pdf->getAliasNbPages(), 0, 'R', 0);
-        }
+		return pdf_pagefoot($pdf,$outputlangs,$newfreetext,$this->emetteur,$this->marge_basse,$this->marge_gauche,$this->page_hauteur,$object,$showdetails,$hidefreetext);
 	}
-
 }
-

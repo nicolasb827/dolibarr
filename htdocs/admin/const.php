@@ -1,7 +1,7 @@
 <?php
 /* Copyright (C) 2003		Rodolphe Quiedeville	<rodolphe@quiedeville.org>
  * Copyright (C) 2004-2013	Laurent Destailleur		<eldy@users.sourceforge.net>
- * Copyright (C) 2005-2012	Regis Houssin			<regis.houssin@capnetworks.com>
+ * Copyright (C) 2005-2012	Regis Houssin			<regis.houssin@inodbox.com>
  * Copyright (C) 2013		Juanjo Menent			<jmenent@2byte.es>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,6 +27,7 @@
 require '../main.inc.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/admin.lib.php';
 
+// Load translation files required by the page
 $langs->load("admin");
 
 if (! $user->admin)
@@ -36,11 +37,11 @@ $rowid=GETPOST('rowid','int');
 $entity=GETPOST('entity','int');
 $action=GETPOST('action','alpha');
 $update=GETPOST('update','alpha');
-$delete=GETPOST('delete');	// Do not use alpha here
+$delete=GETPOST('delete','none');	// Do not use alpha here
 $debug=GETPOST('debug','int');
 $consts=GETPOST('const','array');
 $constname=GETPOST('constname','alpha');
-$constvalue=GETPOST('constvalue');
+$constvalue=GETPOST('constvalue','none');	// We shoul dbe able to send everything here
 $constnote=GETPOST('constnote','alpha');
 
 
@@ -182,6 +183,7 @@ print '<form action="'.$_SERVER["PHP_SELF"].((empty($user->entity) && $debug)?'?
 print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
 print '<input type="hidden" id="action" name="action" value="">';
 
+print '<div class="div-table-responsive-no-min">';
 print '<table class="noborder" width="100%">';
 print '<tr class="liste_titre">';
 print '<td>'.$langs->trans("Name").'</td>';
@@ -196,7 +198,7 @@ print "</tr>\n";
 $var=false;
 print "\n";
 
-print '<tr '.$bc[$var].'><td><input type="text" class="flat" size="24" name="constname" value="'.$constname.'"></td>'."\n";
+print '<tr class="oddeven"><td><input type="text" class="flat" size="24" name="constname" value="'.$constname.'"></td>'."\n";
 print '<td>';
 print '<input type="text" class="flat" size="30" name="constvalue" value="'.$constvalue.'">';
 print '</td><td>';
@@ -246,11 +248,11 @@ if ($result)
 	while ($i < $num)
 	{
 		$obj = $db->fetch_object($result);
-		$var=!$var;
+
 
 		print "\n";
 
-		print '<tr '.$bc[$var].'><td>'.$obj->name.'</td>'."\n";
+		print '<tr class="oddeven"><td>'.$obj->name.'</td>'."\n";
 
 		// Value
 		print '<td>';
@@ -297,6 +299,7 @@ if ($result)
 
 
 print '</table>';
+print '</div>';
 
 if ($conf->use_javascript_ajax)
 {
@@ -311,6 +314,6 @@ if ($conf->use_javascript_ajax)
 
 print "</form>\n";
 
+// End of page
 llxFooter();
-
 $db->close();

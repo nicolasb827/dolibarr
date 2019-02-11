@@ -27,8 +27,15 @@
  */
 class FormPropal
 {
-	var $db;
-	var $error;
+	/**
+     * @var DoliDB Database handler.
+     */
+    public $db;
+	
+	/**
+	 * @var string Error code (or message)
+	 */
+	public $error='';
 
 
 	/**
@@ -50,25 +57,32 @@ class FormPropal
      *    @param	int		$excludedraft	0=All status, 1=Exclude draft status
      *    @param	int 	$showempty		1=Add empty line
      *    @param    string  $mode           'customer', 'supplier'
+     *    @param    string  $htmlname       Name of select field
      *    @return	void
      */
-    function selectProposalStatus($selected='',$short=0, $excludedraft=0, $showempty=1, $mode='customer')
+    function selectProposalStatus($selected='',$short=0, $excludedraft=0, $showempty=1, $mode='customer',$htmlname='propal_statut')
     {
         global $langs;
 
         $prefix='';
         $listofstatus=array();
-        if ($mode == 'supplier') 
+        if ($mode == 'supplier')
         {
             $prefix='SupplierProposalStatus';
-            
+
             $langs->load("supplier_proposal");
-            $listofstatus=array(0=>array('code'=>'PR_DRAFT'), 1=>array('code'=>'PR_OPEN'), 2=>array('code'=>'PR_SIGNED'), 3=>array('code'=>'PR_NOTSIGNED'), 4=>array('code'=>'PR_CLOSED'));
+            $listofstatus=array(
+                0=>array('id'=>0, 'code'=>'PR_DRAFT'),
+                1=>array('id'=>1, 'code'=>'PR_OPEN'),
+                2=>array('id'=>2, 'code'=>'PR_SIGNED'),
+                3=>array('id'=>3, 'code'=>'PR_NOTSIGNED'),
+                4=>array('id'=>4, 'code'=>'PR_CLOSED')
+            );
         }
         else
         {
             $prefix="PropalStatus";
-            
+
             $sql = "SELECT id, code, label, active FROM ".MAIN_DB_PREFIX."c_propalst";
             $sql .= " WHERE active = 1";
             dol_syslog(get_class($this)."::selectProposalStatus", LOG_DEBUG);
@@ -93,8 +107,8 @@ class FormPropal
             }
         }
 
-        print '<select class="flat" name="propal_statut">';
-        if ($showempty) print '<option value="">&nbsp;</option>';
+        print '<select class="flat" name="'.$htmlname.'">';
+        if ($showempty) print '<option value="-1">&nbsp;</option>';
 
         foreach($listofstatus as $key => $obj)
         {
@@ -106,7 +120,7 @@ class FormPropal
 					continue;
 				}
             }
-            if ($selected == $obj['id'])
+            if ($selected != '' && $selected == $obj['id'])
             {
                 print '<option value="'.$obj['id'].'" selected>';
             }
@@ -115,15 +129,16 @@ class FormPropal
                 print '<option value="'.$obj['id'].'">';
             }
             $key=$obj['code'];
-            if ($langs->trans($prefix."PropalStatus".$key.($short?'Short':'')) != $prefix."PropalStatus".$key.($short?'Short':''))
+            if ($langs->trans($prefix.$key.($short?'Short':'')) != $prefix.$key.($short?'Short':''))
             {
-                print $langs->trans($prefix."PropalStatus".$key.($short?'Short':''));
+                print $langs->trans($prefix.$key.($short?'Short':''));
             }
             else
 			{
-                $conv_to_new_code=array('PR_DRAFT'=>'Draft','PR_OPEN'=>'Opened','PR_CLOSED'=>'Closed','PR_SIGNED'=>'Signed','PR_NOTSIGNED'=>'NotSigned','PR_FAC'=>'Billed');
+                $conv_to_new_code=array('PR_DRAFT'=>'Draft','PR_OPEN'=>'Validated','PR_CLOSED'=>'Closed','PR_SIGNED'=>'Signed','PR_NOTSIGNED'=>'NotSigned','PR_FAC'=>'Billed');
                 if (! empty($conv_to_new_code[$obj['code']])) $key=$conv_to_new_code[$obj['code']];
-                print ($langs->trans($prefix.$key.($short?'Short':''))!=$prefix.$key.($short?'Short':''))?$langs->trans($prefix.$key.($short?'Short':'')):$obj['label'];
+
+                print ($langs->trans($prefix.$key.($short?'Short':''))!=$prefix.$key.($short?'Short':''))?$langs->trans($prefix.$key.($short?'Short':'')):($obj['label']?$obj['label']:$obj['code']);
             }
             print '</option>';
             $i++;
@@ -131,4 +146,3 @@ class FormPropal
         print '</select>';
     }
 }
-

@@ -1,7 +1,7 @@
 <?php
 /* Copyright (C) 2003      Rodolphe Quiedeville <rodolphe@quiedeville.org>
  * Copyright (C) 2004-2012 Laurent Destailleur  <eldy@users.sourceforge.net>
- * Copyright (C) 2005-2012 Regis Houssin        <regis.houssin@capnetworks.com>
+ * Copyright (C) 2005-2012 Regis Houssin        <regis.houssin@inodbox.com>
  * Copyright (C) 2012      Juanjo Menent		<jmenent@2byte.es>
  * Copyright (C) 2014      Marcos García        <marcosgdf@gmail.com>
  *
@@ -36,9 +36,13 @@ require_once DOL_DOCUMENT_ROOT.'/compta/bank/class/account.class.php';   // Requ
  */
 abstract class ModelePDFPropales extends CommonDocGenerator
 {
-	var $error='';
+	/**
+	 * @var string Error code (or message)
+	 */
+	public $error='';
 
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	/**
 	 *  Return list of active generation modules
 	 *
@@ -48,6 +52,7 @@ abstract class ModelePDFPropales extends CommonDocGenerator
 	 */
 	static function liste_modeles($db,$maxfilenamelength=0)
 	{
+        // phpcs:enable
 		global $conf;
 
 		$type='propal';
@@ -66,7 +71,10 @@ abstract class ModelePDFPropales extends CommonDocGenerator
  */
 abstract class ModeleNumRefPropales
 {
-	var $error='';
+	/**
+	 * @var string Error code (or message)
+	 */
+	public $error='';
 
 	/**
 	 * Return if a module can be used or not
@@ -143,26 +151,3 @@ abstract class ModeleNumRefPropales
 		return $langs->trans("NotAvailable");
 	}
 }
-
-
-/**
- *  Create a document onto disk according to template module.
- *
- * 	@param	    DoliDB		$db  			Database handler
- * 	@param	    Propal		$object			Object proposal
- * 	@param	    string		$modele			Force model to use ('' to not force)
- * 	@param		Translate	$outputlangs	Object langs to use for output
- *  @param      int			$hidedetails    Hide details of lines
- *  @param      int			$hidedesc       Hide description
- *  @param      int			$hideref        Hide ref
- * 	@return     int         				0 if KO, 1 if OK
- * @deprecated Use the new function generateDocument of Propal class
- * @see Propal::generateDocument()
- */
-function propale_pdf_create(DoliDB $db, Propal $object, $modele, $outputlangs, $hidedetails=0, $hidedesc=0, $hideref=0)
-{
-	dol_syslog(__METHOD__ . " is deprecated", LOG_WARNING);
-
-	return $object->generateDocument($modele, $outputlangs, $hidedetails, $hidedesc, $hideref);
-}
-

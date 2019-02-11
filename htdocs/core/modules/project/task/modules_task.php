@@ -1,5 +1,5 @@
 <?php
-/* Copyright (C) 2010 Regis Houssin  <regis.houssin@capnetworks.com>
+/* Copyright (C) 2010 Regis Houssin  <regis.houssin@inodbox.com>
  * Copyright (C) 2010 Florian Henry  <florian.henry<àopen-concept.pro>
  * Copyright (C) 2014 Marcos García  <marcosgdf@gmail.com>
  *
@@ -32,18 +32,23 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/commondocgenerator.class.php';
  */
 abstract class ModelePDFTask extends CommonDocGenerator
 {
-	var $error='';
+	/**
+	 * @var string Error code (or message)
+	 */
+	public $error='';
 
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
 	/**
 	 *  Return list of active generation modules
 	 *
      *  @param	DoliDB	$db     			Database handler
      *  @param  integer	$maxfilenamelength  Max length of value to show
      *  @return	array						List of templates
-	 */
-	static function liste_modeles($db,$maxfilenamelength=0)
+     */
+    static function liste_modeles($db,$maxfilenamelength=0)
 	{
+        // phpcs:enable
 		global $conf;
 
 		$type='project_task';
@@ -63,7 +68,10 @@ abstract class ModelePDFTask extends CommonDocGenerator
  */
 abstract class ModeleNumRefTask
 {
-	var $error='';
+	/**
+	 * @var string Error code (or message)
+	 */
+	public $error='';
 
 	/**
 	 *  Return if a module can be used or not
@@ -139,27 +147,3 @@ abstract class ModeleNumRefTask
 		return $langs->trans("NotAvailable");
 	}
 }
-
-
-/**
- *  Create an intervention document on disk using template defined into PROJECT_TASK_ADDON_PDF
- *
- *  @param	DoliDB		$db  			objet base de donnee
- *  @param	Task		$object			Object fichinter
- *  @param	string		$modele			force le modele a utiliser ('' par defaut)
- *  @param	Translate	$outputlangs	objet lang a utiliser pour traduction
- *  @param  int			$hidedetails    Hide details of lines
- *  @param  int			$hidedesc       Hide description
- *  @param  int			$hideref        Hide ref
- *  @param  HookManager	$hookmanager	Hook manager instance
- *  @return int         				0 if KO, 1 if OK
- * @deprecated Use the new function generateDocument of Task class
- * @see Task::generateDocument()
- */
-function task_pdf_create(DoliDB $db, Task $object, $modele, $outputlangs, $hidedetails=0, $hidedesc=0, $hideref=0, $hookmanager=false)
-{
-	dol_syslog(__METHOD__ . " is deprecated", LOG_WARNING);
-
-	return $object->generateDocument($modele, $outputlangs, $hidedetails, $hidedesc, $hideref, $hookmanager);
-}
-

@@ -32,10 +32,16 @@ class mailing_example extends MailingTargets
     var $desc='Put here a description';
 	// CHANGE THIS: Set to 1 if selector is available for admin users only
     var $require_admin=0;
+    // CHANGE THIS: Add a tooltip language key to add a tooltip help icon after the email target selector
+    var $tooltip='MyTooltipLangKey';
 
     var $require_module=array();
     var $picto='';
-    var $db;
+
+    /**
+     * @var DoliDB Database handler.
+     */
+    public $db;
 
 
     // CHANGE THIS: Constructor name must be called mailing_xxx with xxx=name of your selector
@@ -50,6 +56,7 @@ class mailing_example extends MailingTargets
     }
 
 
+    // phpcs:disable PEAR.NamingConventions.ValidFunctionName.NotCamelCaps
     /**
      *  This is the main function that returns the array of emails
      *
@@ -59,6 +66,7 @@ class mailing_example extends MailingTargets
      */
     function add_to_target($mailing_id,$filtersarray=array())
     {
+        // phpcs:enable
         $target = array();
 
 	    // CHANGE THIS
@@ -105,7 +113,7 @@ class mailing_example extends MailingTargets
      */
     function getNbOfRecipients($sql='')
     {
-	    // CHANGE THIS: Optionnal
+        // CHANGE THIS: Optionnal
 
         // Example: return parent::getNbOfRecipients("SELECT count(*) as nb from dolibarr_table");
         // Example: return 500;
@@ -120,7 +128,7 @@ class mailing_example extends MailingTargets
      */
     function formFilter()
     {
-	    // CHANGE THIS: Optionnal
+        // CHANGE THIS: Optionnal
 
         $s='';
         return $s;
@@ -136,10 +144,8 @@ class mailing_example extends MailingTargets
      */
     function url($id)
     {
-	    // CHANGE THIS: Optionnal
+        // CHANGE THIS: Optionnal
 
         return '';
     }
-
 }
-

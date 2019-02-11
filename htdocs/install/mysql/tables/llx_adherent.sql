@@ -2,7 +2,7 @@
 -- Copyright (C) 2002-2004 Rodolphe Quiedeville <rodolphe@quiedeville.org>
 -- Copyright (C) 2002-2003 Jean-Louis Bergamo   <jlb@j1b.org>
 -- Copyright (C) 2006-2009 Laurent Destailleur  <eldy@users.sourceforge.net>
--- Copyright (C) 2009      Regis Houssin        <regis.houssin@capnetworks.com>
+-- Copyright (C) 2009      Regis Houssin        <regis.houssin@inodbox.com>
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -46,7 +46,16 @@ create table llx_adherent
   state_id         integer,
   country          integer,
   email            varchar(255),
+
   skype            varchar(255),
+  twitter          varchar(255),                        		--
+  facebook         varchar(255),                        		--
+  instagram        varchar(255),                        		--
+  snapchat         varchar(255),                        		--
+  googleplus       varchar(255),                        		--
+  youtube          varchar(255),                        		--
+  whatsapp         varchar(255),                        		--
+
   phone            varchar(30),
   phone_perso      varchar(30),
   phone_mobile     varchar(30),
@@ -57,6 +66,7 @@ create table llx_adherent
   datefin          datetime,  -- date de fin de validite de la cotisation
   note_private     text DEFAULT NULL,
   note_public      text DEFAULT NULL,
+  model_pdf		   varchar(255),
   datevalid        datetime,  -- date de validation
   datec            datetime,  -- date de creation
   tms              timestamp, -- date de modification
